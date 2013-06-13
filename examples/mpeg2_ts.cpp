@@ -12,6 +12,16 @@ typedef tuple<field<8, unsigned char>,  // sync byte
 	      field<13, unsigned short> // PID
 	      > mpeg2_ts_tpl;
 
+typedef protocol<mpeg2_ts_tpl> ts_proto;
+
+enum class mpeg2_ts {
+    sync_byte = 0,
+    tei,
+    pusi,
+    transport_priority,
+    pid,
+};
+
 int main()
 {
     cout << tuple_element<0, mpeg2_ts_tpl>::type::bits << endl;
@@ -35,4 +45,5 @@ int main()
     b[2] = 0x01;
 
     cout << std::hex << get_field<tuple_element<4, mpeg2_ts_tpl>::type::bits, bit_offset<4, mpeg2_ts_tpl>::value, short>::value(&b[1]) << endl;
+    cout << std::hex << ts_proto::get_field<mpeg2_ts::pid>(b) << endl;
 }
