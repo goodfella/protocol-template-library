@@ -137,4 +137,25 @@ namespace protocol_helper
 		get_subbyte<(Field_Bits - bits > 8), Field_Bits - bits, T>::value(buf + 1);
         }
     };
+
+    template<class Tuple>
+    class protocol
+    {
+	public:
+
+	template<size_t I>
+	static const typename std::tuple_element<I, Tuple>::type::type get_field(unsigned char const * const buf);
+    };
+
+    template<class Tuple>
+    template<size_t I>
+    const typename std::tuple_element<I, Tuple>::type::type protocol<Tuple>::get_field(unsigned char const * const buf)
+    {
+	return
+	    protocol_helper::get_field<
+		std::tuple_element<I, Tuple>::type::bits,
+		bit_offset<I, Tuple>::value,
+		typename std::tuple_element<I, Tuple>::type::type
+		>::value(&buf[byte_offset<I, Tuple>::value]);
+    }
 }
