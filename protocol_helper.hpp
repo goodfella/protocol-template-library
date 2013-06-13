@@ -90,7 +90,7 @@ namespace protocol_helper
     struct get_subbyte<true, Field_Bits, T>
     {
 	static const T value(unsigned char const * const buf) {
-	    return (buf[0] << 8) + get_subbyte< (Field_Bits - 8 > 8), Field_Bits - 8, T>(buf);
+	    return (buf[0] << 8) + get_subbyte< (Field_Bits - 8 > 8), Field_Bits - 8, T>::value(buf);
 	}
     };
 
@@ -108,7 +108,7 @@ namespace protocol_helper
     struct get_subbyte<false, Field_Bits, T>
     {
 	static const T value(unsigned char const * const buf) {
-	    return buf[0] & lbit_mask<Field_Bits, 0>::value;
+	    return (buf[0] & lbit_mask<Field_Bits, 0>::value) >> (8 - Field_Bits);
 	}
     };
 
@@ -134,7 +134,7 @@ namespace protocol_helper
 	    // What bit to start the bitmask
 	    const size_t start = Field_Offset % 8;
 	    // How many bits to include in the bitmask
-	    const size_t bits = Field_Bits > 8 ? Field_Bits % 8 : Field_Bits;
+	    const size_t bits = Field_Bits > 8 ? 8 - start: Field_Bits;
 	    return
 		((buf[0] & lbit_mask<bits, start>::value) << (Field_Bits > bits ? Field_Bits - bits : 0)) +
 		get_subbyte<(Field_Bits - bits > 8), Field_Bits - bits, T>::value(buf + 1);
