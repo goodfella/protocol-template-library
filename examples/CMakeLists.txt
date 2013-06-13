@@ -6,3 +6,6 @@ ADD_DEFINITIONS(-Wall -Werror -std=c++0x)
 
 ADD_EXECUTABLE(mpeg2-ts
   mpeg2_ts.cpp)
+
+ADD_EXECUTABLE(test
+  test.cpp)
