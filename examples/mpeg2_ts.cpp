@@ -32,18 +32,23 @@ int main()
     cout << byte_offset<1, mpeg2_ts_tpl>::value << endl;
     cout << byte_offset<0, mpeg2_ts_tpl>::value << endl;
 
-    cout << std::hex << static_cast<int>(lbit_mask<0>::value) << endl;
-    cout << std::hex << static_cast<int>(lbit_mask<1>::value) << endl;
-    cout << std::hex << static_cast<int>(lbit_mask<2>::value) << endl;
-    cout << std::hex << static_cast<int>(lbit_mask<3>::value) << endl;
-    cout << std::hex << static_cast<int>(lbit_mask<4>::value) << endl;
-    cout << std::hex << static_cast<int>(lbit_mask<8>::value) << endl;
+    cout << std::hex << static_cast<int>(lbit_mask<0,0>::value) << endl;
+    cout << std::hex << static_cast<int>(lbit_mask<1,0>::value) << endl;
+    cout << std::hex << static_cast<int>(lbit_mask<2,0>::value) << endl;
+    cout << std::hex << static_cast<int>(lbit_mask<3,0>::value) << endl;
+    cout << std::hex << static_cast<int>(lbit_mask<4,0>::value) << endl;
+    cout << std::hex << static_cast<int>(lbit_mask<8,0>::value) << endl;
 
     unsigned char b[3];
     
-    b[1] = 0x10;
+    b[0] = 0x47;
+    b[1] = 0xb0;
     b[2] = 0x01;
 
-    cout << std::hex << get_field<tuple_element<4, mpeg2_ts_tpl>::type::bits, bit_offset<4, mpeg2_ts_tpl>::value, short>::value(&b[1]) << endl;
-    cout << std::hex << ts_proto::get_field<mpeg2_ts::pid>(b) << endl;
+    cout << std::hex << std::showbase << static_cast<unsigned short>(ts_proto::get_field<mpeg2_ts::sync_byte>(b)) << endl;
+    cout << std::hex << std::showbase << ts_proto::get_field<mpeg2_ts::tei>(b) << endl;
+    cout << std::hex << std::showbase << ts_proto::get_field<mpeg2_ts::pusi>(b) << endl;
+    cout << std::hex << std::showbase << ts_proto::get_field<mpeg2_ts::transport_priority>(b) << endl;
+    cout << std::hex << std::showbase << ts_proto::get_field<mpeg2_ts::pid>(b) << endl;
+    cout << std::hex << std::showbase << get_field<tuple_element<4, mpeg2_ts_tpl>::type::bits, bit_offset<4, mpeg2_ts_tpl>::value, short>::value(&b[1]) << endl;
 }
