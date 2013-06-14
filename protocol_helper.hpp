@@ -118,14 +118,28 @@ namespace protocol_helper
 	}
     };
 
+    /// Wrapper around a protocol tuple
+    /**
+     *  @tparam Tuple The tuple that represents the protocol
+     */
     template<class Tuple>
     class protocol
     {
 	public:
 
+	/// Accessor for a protocol field given a protocol buffer
+	/**
+	 *  @tparam I Order number of the field in the protocol tuple.
+	 *  @param buf Protocol buffer.
+	 */
 	template<size_t I>
 	static const typename std::tuple_element<I, Tuple>::type::type field_value(unsigned char const * const buf);
-	enum : size_t { length = protocol_helper::protocol_length<Tuple>::value };
+
+	/// Length in bits of the protocol
+	enum : size_t { bit_length = protocol_helper::protocol_length<Tuple>::value };
+
+	/// Length in bytes required to store the protocols buffer
+	enum : size_t { byte_length = protocol<Tuple>::bit_length % 8 ? (protocol<Tuple>::bit_length / 8) + 1 : protocol<Tuple>::bit_length / 8 };
     };
 
     template<class Tuple>
