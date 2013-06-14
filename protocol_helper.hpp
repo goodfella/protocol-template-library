@@ -141,6 +141,38 @@ namespace protocol_helper
         }
     };
 
+    /// Returns the value of a field
+    /**
+     *   @tparam span True if the field spans multiple bytes
+     *   @tparam Field_Bits The number of bits in a field
+     *   @tparam Field_Offset The number of bits prior to this field
+     *   @tparam The type used to represent the field
+     */
+    template<bool Span, size_t Field_Bits, size_t Field_Offset, class T>
+    struct field_value;
+
+    /// Specialization for when the field does not span multiple bytes
+    template<size_t Field_Bits, size_t Field_Offset, class T>
+    struct field_value<false, Field_Bits, Field_Offset, T>
+    {
+	static const T get(unsigned char const * const buf) {
+	    const size_t start = Field_Offset % 8;
+	    return (buf[0] & lbit_mask<Field_Bits, start>::value) >> (8 - Field_Bits - start);
+	}
+    };
+
+    /// Specialization for when the field spans multiple bytes
+    template<size_t Field_Bits, size_t Field_Offset, class T>
+    struct field_value<true, Field_Bits, Field_Offset, T>
+    {
+	static const T get(unsigned char const * const buf) {
+	    const size_t start = Field_Offset % 8;
+	    const size_t bits = Field_Bits > 8 ? 8 - start : Field_Bits;
+	    return ((buf[0] & lbit_mask<bits, start>::value) << (Field_Bits > bits ? Field_Bits - bits : 0)) +
+		field_value<(Field_Bits - bits > 8), Field_Bits - bits, 0, T>::get(buf + 1);
+	}
+    };
+
     template<class Tuple>
     class protocol
     {
@@ -155,10 +187,10 @@ namespace protocol_helper
     const typename std::tuple_element<I, Tuple>::type::type protocol<Tuple>::get_field(unsigned char const * const buf)
     {
 	return
-	    protocol_helper::get_field<
-		std::tuple_element<I, Tuple>::type::bits,
-		bit_offset<I, Tuple>::value,
-		typename std::tuple_element<I, Tuple>::type::type
-		>::value(&buf[byte_offset<I, Tuple>::value]);
+	    protocol_helper::field_value<
+		((protocol_helper::bit_offset<I, Tuple>::value % 8) + std::tuple_element<I, Tuple>::type::bits > 8),
+	    std::tuple_element<I, Tuple>::type::bits,
+	    protocol_helper::bit_offset<I, Tuple>::value,
+	    typename std::tuple_element<I, Tuple>::type::type>::get(&buf[protocol_helper::byte_offset<I, Tuple>::value]);
     }
 }
