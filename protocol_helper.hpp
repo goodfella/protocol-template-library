@@ -55,6 +55,19 @@ namespace protocol_helper
 	enum : size_t { value = bit_offset<I, Tuple>::value / 8 };
     };
 
+    /// Returns the length in bits of the protocol
+    /**
+     *
+     *  @tparam Tuple The tuple which contains the fields that
+     *  represents the protocol
+     */
+    template<class Tuple>
+    struct protocol_length
+    {
+	enum : size_t { value = bit_offset<std::tuple_size<Tuple>::value - 1, Tuple>::value +
+			std::tuple_element<std::tuple_size<Tuple>::value - 1, Tuple>::type::bits };
+    };
+
     /// Returns the mask necessary to select the number of bits from the left
     /**
      *  @tparam Bits the number of bits from the left of an unsigned char
@@ -112,6 +125,7 @@ namespace protocol_helper
 
 	template<size_t I>
 	static const typename std::tuple_element<I, Tuple>::type::type field_value(unsigned char const * const buf);
+	enum : size_t { length = protocol_helper::protocol_length<Tuple>::value };
     };
 
     template<class Tuple>
