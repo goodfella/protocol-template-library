@@ -28,22 +28,22 @@ int main()
 
     memset(buf, 0, sizeof(buf));
 
-    buf[0] = 0x47;  // field 0
+    buf[0] = 0x81;  // field 0
     buf[1] = 0x80;  // field 1
-    buf[1] |= 0x7e; // field 2
+    buf[1] |= 0x42; // field 2
     buf[1] |= 0x01; // beginning of field 3
-    buf[2] = 0x01;  // middle of field 3
+    buf[2] = 0x00;  // middle of field 3
     buf[3] = 0x01;  // end of field 3
-    buf[4] = 0xff;  // beginning of field 4
+    buf[4] = 0x80;  // beginning of field 4
     buf[5] = 0x80;  // end of field 4
-    buf[5] |= 0x7f; // field 5
-    buf[6] = 0x91;  // beginning of field 6
-    buf[7] = 0x91;  // end of field 6
+    buf[5] |= 0x41; // field 5
+    buf[6] = 0x80;  // beginning of field 6
+    buf[7] = 0x01;  // end of field 6
     buf[8] = 0x80;  // field 7
-    buf[8] |= 0x7e; // field 8
+    buf[8] |= 0x41; // field 8
     buf[9] |= 0x80; // field 9
-    buf[9] |= 0x7f; // beginning of field 10
-    buf[10] = 0xff; // end of field 10
+    buf[9] |= 0x40; // beginning of field 10
+    buf[10] = 0x40; // end of field 10
 
     cout << "field 0: " << std::hex << std::showbase << test_proto::get_field<0>(buf) << endl;
     cout << "field 1: " << std::hex << std::showbase << test_proto::get_field<1>(buf) << endl;
