@@ -45,6 +45,7 @@ int main()
     buf[9] |= 0x40; // beginning of field 10
     buf[10] = 0x40; // end of field 10
 
+    cout << "protocol length: " << test_proto::length << endl;
     cout << "field 0: " << std::hex << std::showbase << test_proto::field_value<0>(buf) << endl;
     cout << "field 1: " << std::hex << std::showbase << test_proto::field_value<1>(buf) << endl;
     cout << "field 2: " << std::hex << std::showbase << test_proto::field_value<2>(buf) << endl;
