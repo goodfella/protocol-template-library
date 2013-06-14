@@ -45,15 +45,15 @@ int main()
     buf[9] |= 0x40; // beginning of field 10
     buf[10] = 0x40; // end of field 10
 
-    cout << "field 0: " << std::hex << std::showbase << test_proto::get_field<0>(buf) << endl;
-    cout << "field 1: " << std::hex << std::showbase << test_proto::get_field<1>(buf) << endl;
-    cout << "field 2: " << std::hex << std::showbase << test_proto::get_field<2>(buf) << endl;
-    cout << "field 3: " << std::hex << std::showbase << test_proto::get_field<3>(buf) << endl;
-    cout << "field 4: " << std::hex << std::showbase << test_proto::get_field<4>(buf) << endl;
-    cout << "field 5: " << std::hex << std::showbase << test_proto::get_field<5>(buf) << endl;
-    cout << "field 6: " << std::hex << std::showbase << test_proto::get_field<6>(buf) << endl;
-    cout << "field 7: " << std::hex << std::showbase << test_proto::get_field<7>(buf) << endl;
-    cout << "field 8: " << std::hex << std::showbase << test_proto::get_field<8>(buf) << endl;
-    cout << "field 9: " << std::hex << std::showbase << test_proto::get_field<9>(buf) << endl;
-    cout << "field 10: " << std::hex << std::showbase << test_proto::get_field<10>(buf) << endl;
+    cout << "field 0: " << std::hex << std::showbase << test_proto::field_value<0>(buf) << endl;
+    cout << "field 1: " << std::hex << std::showbase << test_proto::field_value<1>(buf) << endl;
+    cout << "field 2: " << std::hex << std::showbase << test_proto::field_value<2>(buf) << endl;
+    cout << "field 3: " << std::hex << std::showbase << test_proto::field_value<3>(buf) << endl;
+    cout << "field 4: " << std::hex << std::showbase << test_proto::field_value<4>(buf) << endl;
+    cout << "field 5: " << std::hex << std::showbase << test_proto::field_value<5>(buf) << endl;
+    cout << "field 6: " << std::hex << std::showbase << test_proto::field_value<6>(buf) << endl;
+    cout << "field 7: " << std::hex << std::showbase << test_proto::field_value<7>(buf) << endl;
+    cout << "field 8: " << std::hex << std::showbase << test_proto::field_value<8>(buf) << endl;
+    cout << "field 9: " << std::hex << std::showbase << test_proto::field_value<9>(buf) << endl;
+    cout << "field 10: " << std::hex << std::showbase << test_proto::field_value<10>(buf) << endl;
 }

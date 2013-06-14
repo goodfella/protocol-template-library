@@ -111,12 +111,12 @@ namespace protocol_helper
 	public:
 
 	template<size_t I>
-	static const typename std::tuple_element<I, Tuple>::type::type get_field(unsigned char const * const buf);
+	static const typename std::tuple_element<I, Tuple>::type::type field_value(unsigned char const * const buf);
     };
 
     template<class Tuple>
     template<size_t I>
-    const typename std::tuple_element<I, Tuple>::type::type protocol<Tuple>::get_field(unsigned char const * const buf)
+    const typename std::tuple_element<I, Tuple>::type::type protocol<Tuple>::field_value(unsigned char const * const buf)
     {
 	return
 	    protocol_helper::field_value<

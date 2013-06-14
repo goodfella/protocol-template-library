@@ -38,9 +38,9 @@ int main()
     b[1] = 0xb0;
     b[2] = 0x01;
 
-    cout << std::hex << std::showbase << static_cast<unsigned short>(ts_proto::get_field<mpeg2_ts::sync_byte>(b)) << endl;
-    cout << std::hex << std::showbase << ts_proto::get_field<mpeg2_ts::tei>(b) << endl;
-    cout << std::hex << std::showbase << ts_proto::get_field<mpeg2_ts::pusi>(b) << endl;
-    cout << std::hex << std::showbase << ts_proto::get_field<mpeg2_ts::transport_priority>(b) << endl;
-    cout << std::hex << std::showbase << ts_proto::get_field<mpeg2_ts::pid>(b) << endl;
+    cout << std::hex << std::showbase << static_cast<unsigned short>(ts_proto::field_value<mpeg2_ts::sync_byte>(b)) << endl;
+    cout << std::hex << std::showbase << ts_proto::field_value<mpeg2_ts::tei>(b) << endl;
+    cout << std::hex << std::showbase << ts_proto::field_value<mpeg2_ts::pusi>(b) << endl;
+    cout << std::hex << std::showbase << ts_proto::field_value<mpeg2_ts::transport_priority>(b) << endl;
+    cout << std::hex << std::showbase << ts_proto::field_value<mpeg2_ts::pid>(b) << endl;
 }
