@@ -50,7 +50,7 @@ namespace protocol_helper
     template<size_t I, class Tuple>
     struct bit_offset
     {
-	enum : size_t { value = field_bits<I - 1, Tuple>::value + bit_offset<I - 1, Tuple>::value };
+	enum : size_t { value = protocol_helper::field_bits<I - 1, Tuple>::value + protocol_helper::bit_offset<I - 1, Tuple>::value };
     };
 
     /// Base implementation of bit_offset for the zero element
@@ -74,7 +74,7 @@ namespace protocol_helper
     template<size_t I, class Tuple>
     struct byte_offset
     {
-	enum : size_t { value = bit_offset<I, Tuple>::value / 8 };
+	enum : size_t { value = protocol_helper::bit_offset<I, Tuple>::value / 8 };
     };
 
     /// Returns the length in bits of the protocol
@@ -86,8 +86,8 @@ namespace protocol_helper
     template<class Tuple>
     struct protocol_length
     {
-	enum : size_t { value = bit_offset<std::tuple_size<Tuple>::value - 1, Tuple>::value +
-			field_bits<std::tuple_size<Tuple>::value - 1, Tuple>::value };
+	enum : size_t { value = protocol_helper::bit_offset<std::tuple_size<Tuple>::value - 1, Tuple>::value +
+			protocol_helper::field_bits<std::tuple_size<Tuple>::value - 1, Tuple>::value };
     };
 
     /// Returns the mask necessary to select the number of bits from the left
@@ -98,7 +98,7 @@ namespace protocol_helper
     template<size_t Bits, size_t Start>
     struct lbit_mask
     {
-	enum : unsigned char { value = (1 << (8 - (Bits + Start))) + lbit_mask<Bits - 1, Start>::value };
+	enum : unsigned char { value = (1 << (8 - (Bits + Start))) + protocol_helper::lbit_mask<Bits - 1, Start>::value };
     };
 
     /// Base implementation of lbit_mask
@@ -124,7 +124,7 @@ namespace protocol_helper
     {
 	static const T get(unsigned char const * const buf) {
 	    const size_t start = Field_Offset % 8;
-	    return (buf[0] & lbit_mask<Field_Bits, start>::value) >> (8 - Field_Bits - start);
+	    return (buf[0] & protocol_helper::lbit_mask<Field_Bits, start>::value) >> (8 - Field_Bits - start);
 	}
     };
 
@@ -135,8 +135,8 @@ namespace protocol_helper
 	static const T get(unsigned char const * const buf) {
 	    const size_t start = Field_Offset % 8;
 	    const size_t bits = Field_Bits > 8 ? 8 - start : Field_Bits;
-	    return ((buf[0] & lbit_mask<bits, start>::value) << (Field_Bits > bits ? Field_Bits - bits : 0)) +
-		field_value<(Field_Bits - bits > 8), Field_Bits - bits, 0, T>::get(buf + 1);
+	    return ((buf[0] & protocol_helper::lbit_mask<bits, start>::value) << (Field_Bits > bits ? Field_Bits - bits : 0)) +
+		protocol_helper::field_value<(Field_Bits - bits > 8), Field_Bits - bits, 0, T>::get(buf + 1);
 	}
     };
 
