@@ -50,7 +50,7 @@ namespace protocol_helper
     template<size_t I, class Tuple>
     struct bit_offset
     {
-	enum : size_t { value = std::tuple_element<I - 1, Tuple>::type::bits + bit_offset<I - 1, Tuple>::value };
+	enum : size_t { value = field_bits<I - 1, Tuple>::value + bit_offset<I - 1, Tuple>::value };
     };
 
     /// Base implementation of bit_offset for the zero element
@@ -87,7 +87,7 @@ namespace protocol_helper
     struct protocol_length
     {
 	enum : size_t { value = bit_offset<std::tuple_size<Tuple>::value - 1, Tuple>::value +
-			std::tuple_element<std::tuple_size<Tuple>::value - 1, Tuple>::type::bits };
+			field_bits<std::tuple_size<Tuple>::value - 1, Tuple>::value };
     };
 
     /// Returns the mask necessary to select the number of bits from the left
@@ -155,7 +155,7 @@ namespace protocol_helper
 	 *  @param buf Protocol buffer.
 	 */
 	template<size_t I>
-	static const typename std::tuple_element<I, Tuple>::type::type field_value(unsigned char const * const buf);
+	static const typename protocol_helper::field_type<I, Tuple>::type field_value(unsigned char const * const buf);
 
 	/// Length in bits of the protocol
 	enum : size_t { bit_length = protocol_helper::protocol_length<Tuple>::value };
@@ -166,13 +166,13 @@ namespace protocol_helper
 
     template<class Tuple>
     template<size_t I>
-    const typename std::tuple_element<I, Tuple>::type::type protocol<Tuple>::field_value(unsigned char const * const buf)
+    const typename protocol_helper::field_type<I, Tuple>::type protocol<Tuple>::field_value(unsigned char const * const buf)
     {
 	return
 	    protocol_helper::field_value<
-		((protocol_helper::bit_offset<I, Tuple>::value % 8) + std::tuple_element<I, Tuple>::type::bits > 8),
-	    std::tuple_element<I, Tuple>::type::bits,
-	    protocol_helper::bit_offset<I, Tuple>::value,
-	    typename std::tuple_element<I, Tuple>::type::type>::get(&buf[protocol_helper::byte_offset<I, Tuple>::value]);
+		((protocol_helper::bit_offset<I, Tuple>::value % 8) + protocol_helper::field_bits<I, Tuple>::value > 8),
+		protocol_helper::field_bits<I, Tuple>::value,
+		protocol_helper::bit_offset<I, Tuple>::value,
+		typename protocol_helper::field_type<I, Tuple>::type>::get(&buf[protocol_helper::byte_offset<I, Tuple>::value]);
     }
 }
