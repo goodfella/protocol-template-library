@@ -14,6 +14,28 @@ namespace protocol_helper
 	enum : size_t { bits = Bits };
     };
 
+    /// Returns the number of bits in a field
+    /**
+     *  @tparam I Order number of the element within the tuple
+     *  @tparam Tuple Tuple that contains the field
+     */
+    template<size_t I, class Tuple>
+    struct field_bits
+    {
+	enum : size_t { value = std::tuple_element<I, Tuple>::type::bits };
+    };
+
+    /// Provides a typedef for a fields type
+    /**
+     *  @tparam I Order number of the element within the tuple
+     *  @tparam Tuple Tuplethat contains the field
+     */
+    template<size_t I, class Tuple>
+    struct field_type
+    {
+	typedef typename std::tuple_element<I, Tuple>::type::type type;
+    };
+
     /// Returns the bit offset of a field element within a tuple
     /**
      *  @tparam I Order number of the element within the tuple
