@@ -122,18 +122,22 @@ namespace protocol_helper
     /**
      *  @tparam Bits the number of bits from the left of an unsigned char
      *  to select
+     *
+     *  @tparam Start what bit starting from the left most bit to start the mask
+     *
+     *  @tparam T the type of value
      */
-    template<size_t Bits, size_t Start>
+    template<size_t Bits, size_t Start, class T>
     struct lbit_mask
     {
-	enum : unsigned char { value = (1 << (protocol_helper::bits_per_byte::value - (Bits + Start))) + protocol_helper::lbit_mask<Bits - 1, Start>::value };
+	enum : T { value = (1 << (std::numeric_limits<T>::digits - (Bits + Start))) + protocol_helper::lsb_mask<Bits - 1, Start, T>::value };
     };
 
     /// Base implementation of lbit_mask
-    template<size_t Start>
-    struct lbit_mask<0, Start>
+    template<size_t Start, class T>
+    struct lbit_mask<0, Start, T>
     {
-	enum: unsigned char { value = 0 };
+	enum: T { value = 0 };
     };
 
     /// Returns the value of a field
@@ -154,7 +158,7 @@ namespace protocol_helper
 	    // Select the bits from buf with lbit_mask and right shift
 	    // the resulting value the appropriate bits to fit in the
 	    // space made by the true specialization
-	    return (buf[0] & protocol_helper::lbit_mask<Field_Bits, protocol_helper::field_mask_start<Field_Offset>::value>::value) >> (protocol_helper::bits_per_byte::value - Field_Bits - protocol_helper::field_mask_start<Field_Offset>::value);
+	    return (buf[0] & protocol_helper::lbit_mask<Field_Bits, protocol_helper::field_mask_start<Field_Offset>::value, unsigned char>::value) >> (protocol_helper::bits_per_byte::value - Field_Bits - protocol_helper::field_mask_start<Field_Offset>::value);
 	}
     };
 
@@ -168,7 +172,7 @@ namespace protocol_helper
 	    // next byte's value.  The formula below is:
 
 	    // buf[0] & (mask to select field value in this byte) << (number of bits to fit the remaining field bits)
-	    return ((buf[0] & protocol_helper::lbit_mask<protocol_helper::field_mask_bits<Field_Bits, Field_Offset>::value, protocol_helper::field_mask_start<Field_Offset>::value>::value) << (Field_Bits - protocol_helper::field_mask_bits<Field_Bits, Field_Offset>::value)) +
+	    return ((buf[0] & protocol_helper::lbit_mask<protocol_helper::field_mask_bits<Field_Bits, Field_Offset>::value, protocol_helper::field_mask_start<Field_Offset>::value, unsigned char>::value) << (Field_Bits - protocol_helper::field_mask_bits<Field_Bits, Field_Offset>::value)) +
 		protocol_helper::field_value<(Field_Bits - protocol_helper::field_mask_bits<Field_Bits, Field_Offset>::value > protocol_helper::bits_per_byte::value), Field_Bits - protocol_helper::field_mask_bits<Field_Bits, Field_Offset>::value, 0, T>::get(buf + 1);
 	}
     };
