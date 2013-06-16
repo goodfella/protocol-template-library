@@ -9,13 +9,25 @@ namespace protocol_helper
 	enum : size_t { value = static_cast<size_t>(std::numeric_limits<unsigned char>::digits) };
     };
 
+    /// Constrains fields to be unsigned
+    template<bool Signed>
+    struct unsigned_type_constraint;
+
+    /// Accept only unsigned types
+    /**
+     *  Right shifting of signed types has implementation defined
+     *  behavior, and that's not portable.
+     */
+    template<>
+    struct unsigned_type_constraint<true> {};
+
     /// Represents a field in a binary protocol
     /**
      *  @tparam Bits Number of bits that make up the field
      *  @tparam T Type used to represent the field
      */
     template<size_t Bits, typename T>
-    struct field
+    struct field: unsigned_type_constraint<(!std::numeric_limits<T>::is_signed)>
     {
 	typedef T type;
 	enum : size_t { bits = Bits };
