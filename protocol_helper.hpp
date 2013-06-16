@@ -165,8 +165,10 @@ namespace protocol_helper
 	static const T get(unsigned char const * const buf) {
 	    // Select the bits from buf with lbit_mask and left shift
 	    // the resulting value the appropriate bits to fit the
-	    // next byte's value
-	    return ((buf[0] & protocol_helper::lbit_mask<protocol_helper::field_mask_bits<Field_Bits, Field_Offset>::value, protocol_helper::field_mask_start<Field_Offset>::value>::value) << (Field_Bits > protocol_helper::field_mask_bits<Field_Bits, Field_Offset>::value ? Field_Bits - protocol_helper::field_mask_bits<Field_Bits, Field_Offset>::value : 0)) +
+	    // next byte's value.  The formula below is:
+
+	    // buf[0] & (mask to select field value in this byte) << (number of bits to fit the remaining field bits)
+	    return ((buf[0] & protocol_helper::lbit_mask<protocol_helper::field_mask_bits<Field_Bits, Field_Offset>::value, protocol_helper::field_mask_start<Field_Offset>::value>::value) << (Field_Bits - protocol_helper::field_mask_bits<Field_Bits, Field_Offset>::value)) +
 		protocol_helper::field_value<(Field_Bits - protocol_helper::field_mask_bits<Field_Bits, Field_Offset>::value > protocol_helper::bits_per_byte::value), Field_Bits - protocol_helper::field_mask_bits<Field_Bits, Field_Offset>::value, 0, T>::get(buf + 1);
 	}
     };
