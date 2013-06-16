@@ -1,7 +1,14 @@
 #include <tuple>
+#include <limits>
 
 namespace protocol_helper
 {
+    /// Returns the number of bits per byte
+    struct bits_per_byte
+    {
+	enum : size_t { value = static_cast<size_t>(std::numeric_limits<unsigned char>::digits) };
+    };
+
     /// Represents a field in a binary protocol
     /**
      *  @tparam Bits Number of bits that make up the field
@@ -74,7 +81,7 @@ namespace protocol_helper
     template<size_t I, class Tuple>
     struct field_byte_offset
     {
-	enum : size_t { value = protocol_helper::field_bit_offset<I, Tuple>::value / 8 };
+	enum : size_t { value = protocol_helper::field_bit_offset<I, Tuple>::value / protocol_helper::bits_per_byte::value };
     };
 
     /// Returns the starting bit for a fields byte mask
@@ -84,7 +91,7 @@ namespace protocol_helper
     template<size_t Field_Offset>
     struct field_mask_start
     {
-	enum : size_t { value = Field_Offset % 8 };
+	enum : size_t { value = Field_Offset % protocol_helper::bits_per_byte::value };
     };
 
     /// Returns the number of bits to read from a byte
@@ -95,7 +102,7 @@ namespace protocol_helper
     template<size_t Field_Bits, size_t Field_Offset>
     struct field_mask_bits
     {
-	enum : size_t { value = Field_Bits > 8 ? 8 - field_mask_start<Field_Offset>::value : Field_Bits };
+	enum : size_t { value = Field_Bits > protocol_helper::bits_per_byte::value ? protocol_helper::bits_per_byte::value - field_mask_start<Field_Offset>::value : Field_Bits };
     };
 
     /// Returns the length in bits of the protocol
@@ -119,7 +126,7 @@ namespace protocol_helper
     template<size_t Bits, size_t Start>
     struct lbit_mask
     {
-	enum : unsigned char { value = (1 << (8 - (Bits + Start))) + protocol_helper::lbit_mask<Bits - 1, Start>::value };
+	enum : unsigned char { value = (1 << (protocol_helper::bits_per_byte::value - (Bits + Start))) + protocol_helper::lbit_mask<Bits - 1, Start>::value };
     };
 
     /// Base implementation of lbit_mask
@@ -147,7 +154,7 @@ namespace protocol_helper
 	    // Select the bits from buf with lbit_mask and right shift
 	    // the resulting value the appropriate bits to fit in the
 	    // space made by the true specialization
-	    return (buf[0] & protocol_helper::lbit_mask<Field_Bits, protocol_helper::field_mask_start<Field_Offset>::value>::value) >> (8 - Field_Bits - protocol_helper::field_mask_start<Field_Offset>::value);
+	    return (buf[0] & protocol_helper::lbit_mask<Field_Bits, protocol_helper::field_mask_start<Field_Offset>::value>::value) >> (protocol_helper::bits_per_byte::value - Field_Bits - protocol_helper::field_mask_start<Field_Offset>::value);
 	}
     };
 
@@ -160,7 +167,7 @@ namespace protocol_helper
 	    // the resulting value the appropriate bits to fit the
 	    // next byte's value
 	    return ((buf[0] & protocol_helper::lbit_mask<protocol_helper::field_mask_bits<Field_Bits, Field_Offset>::value, protocol_helper::field_mask_start<Field_Offset>::value>::value) << (Field_Bits > protocol_helper::field_mask_bits<Field_Bits, Field_Offset>::value ? Field_Bits - protocol_helper::field_mask_bits<Field_Bits, Field_Offset>::value : 0)) +
-		protocol_helper::field_value<(Field_Bits - protocol_helper::field_mask_bits<Field_Bits, Field_Offset>::value > 8), Field_Bits - protocol_helper::field_mask_bits<Field_Bits, Field_Offset>::value, 0, T>::get(buf + 1);
+		protocol_helper::field_value<(Field_Bits - protocol_helper::field_mask_bits<Field_Bits, Field_Offset>::value > protocol_helper::bits_per_byte::value), Field_Bits - protocol_helper::field_mask_bits<Field_Bits, Field_Offset>::value, 0, T>::get(buf + 1);
 	}
     };
 
@@ -185,7 +192,7 @@ namespace protocol_helper
 	enum : size_t { bit_length = protocol_helper::protocol_length<Tuple>::value };
 
 	/// Length in bytes required to store the protocols buffer
-	enum : size_t { byte_length = protocol<Tuple>::bit_length % 8 ? (protocol<Tuple>::bit_length / 8) + 1 : protocol<Tuple>::bit_length / 8 };
+	enum : size_t { byte_length = protocol<Tuple>::bit_length % protocol_helper::bits_per_byte::value ? (protocol<Tuple>::bit_length / protocol_helper::bits_per_byte::value) + 1 : protocol<Tuple>::bit_length / protocol_helper::bits_per_byte::value };
     };
 
     template<class Tuple>
@@ -194,7 +201,7 @@ namespace protocol_helper
     {
 	return
 	    protocol_helper::field_value<
-		((protocol_helper::field_bit_offset<I, Tuple>::value % 8) + protocol_helper::field_bits<I, Tuple>::value > 8),
+		((protocol_helper::field_bit_offset<I, Tuple>::value % protocol_helper::bits_per_byte::value) + protocol_helper::field_bits<I, Tuple>::value > protocol_helper::bits_per_byte::value),
 		protocol_helper::field_bits<I, Tuple>::value,
 		protocol_helper::field_bit_offset<I, Tuple>::value,
 		typename protocol_helper::field_type<I, Tuple>::type>::get(&buf[protocol_helper::field_byte_offset<I, Tuple>::value]);
