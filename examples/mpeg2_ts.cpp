@@ -26,11 +26,11 @@ int main()
 {
     cout << tuple_element<0, mpeg2_ts_tpl>::type::bits << endl;
     cout << tuple_element<1, mpeg2_ts_tpl>::type::bits << endl;
-    cout << bit_offset<4, mpeg2_ts_tpl>::value << endl;
-    cout << bit_offset<1, mpeg2_ts_tpl>::value << endl;
-    cout << bit_offset<0, mpeg2_ts_tpl>::value << endl;
-    cout << byte_offset<1, mpeg2_ts_tpl>::value << endl;
-    cout << byte_offset<0, mpeg2_ts_tpl>::value << endl;
+    cout << field_bit_offset<4, mpeg2_ts_tpl>::value << endl;
+    cout << field_bit_offset<1, mpeg2_ts_tpl>::value << endl;
+    cout << field_bit_offset<0, mpeg2_ts_tpl>::value << endl;
+    cout << field_byte_offset<1, mpeg2_ts_tpl>::value << endl;
+    cout << field_byte_offset<0, mpeg2_ts_tpl>::value << endl;
 
     unsigned char b[3];
     
