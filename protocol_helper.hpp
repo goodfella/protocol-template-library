@@ -77,6 +77,27 @@ namespace protocol_helper
 	enum : size_t { value = protocol_helper::field_bit_offset<I, Tuple>::value / 8 };
     };
 
+    /// Returns the starting bit for a fields byte mask
+    /**
+     * @tparam Field_Offset the bit offset
+     */
+    template<size_t Field_Offset>
+    struct field_mask_start
+    {
+	enum : size_t { value = Field_Offset % 8 };
+    };
+
+    /// Returns the number of bits to read from a byte
+    /**
+     *  @tparam the number of bits in the byte for the field
+     *  @tparam The field's offset into the byte
+     */
+    template<size_t Field_Bits, size_t Field_Offset>
+    struct field_mask_bits
+    {
+	enum : size_t { value = Field_Bits > 8 ? 8 - field_mask_start<Field_Offset>::value : Field_Bits };
+    };
+
     /// Returns the length in bits of the protocol
     /**
      *
@@ -123,8 +144,10 @@ namespace protocol_helper
     struct field_value<false, Field_Bits, Field_Offset, T>
     {
 	static const T get(unsigned char const * const buf) {
-	    const size_t start = Field_Offset % 8;
-	    return (buf[0] & protocol_helper::lbit_mask<Field_Bits, start>::value) >> (8 - Field_Bits - start);
+	    // Select the bits from buf with lbit_mask and right shift
+	    // the resulting value the appropriate bits to fit in the
+	    // space made by the true specialization
+	    return (buf[0] & protocol_helper::lbit_mask<Field_Bits, protocol_helper::field_mask_start<Field_Offset>::value>::value) >> (8 - Field_Bits - protocol_helper::field_mask_start<Field_Offset>::value);
 	}
     };
 
@@ -133,10 +156,11 @@ namespace protocol_helper
     struct field_value<true, Field_Bits, Field_Offset, T>
     {
 	static const T get(unsigned char const * const buf) {
-	    const size_t start = Field_Offset % 8;
-	    const size_t bits = Field_Bits > 8 ? 8 - start : Field_Bits;
-	    return ((buf[0] & protocol_helper::lbit_mask<bits, start>::value) << (Field_Bits > bits ? Field_Bits - bits : 0)) +
-		protocol_helper::field_value<(Field_Bits - bits > 8), Field_Bits - bits, 0, T>::get(buf + 1);
+	    // Select the bits from buf with lbit_mask and left shift
+	    // the resulting value the appropriate bits to fit the
+	    // next byte's value
+	    return ((buf[0] & protocol_helper::lbit_mask<protocol_helper::field_mask_bits<Field_Bits, Field_Offset>::value, protocol_helper::field_mask_start<Field_Offset>::value>::value) << (Field_Bits > protocol_helper::field_mask_bits<Field_Bits, Field_Offset>::value ? Field_Bits - protocol_helper::field_mask_bits<Field_Bits, Field_Offset>::value : 0)) +
+		protocol_helper::field_value<(Field_Bits - protocol_helper::field_mask_bits<Field_Bits, Field_Offset>::value > 8), Field_Bits - protocol_helper::field_mask_bits<Field_Bits, Field_Offset>::value, 0, T>::get(buf + 1);
 	}
     };
 
