@@ -118,24 +118,23 @@ namespace protocol_helper
 			protocol_helper::field_bits<std::tuple_size<Tuple>::value - 1, Tuple>::value };
     };
 
-    /// Returns the mask necessary to select the number of bits from the left
+    /// Returns the mask necessary to select bits starting from the most significant bits
     /**
-     *  @tparam Bits the number of bits from the left of an unsigned char
-     *  to select
+     *  @tparam Bits the number of bits to select
      *
-     *  @tparam Start what bit starting from the left most bit to start the mask
+     *  @tparam Start Starting most significant bit (0 based)
      *
      *  @tparam T the type of value
      */
     template<size_t Bits, size_t Start, class T>
-    struct lbit_mask
+    struct msb_mask
     {
-	enum : T { value = (1 << (std::numeric_limits<T>::digits - (Bits + Start))) + protocol_helper::lsb_mask<Bits - 1, Start, T>::value };
+	enum : T { value = (1 << (std::numeric_limits<T>::digits - (Bits + Start))) + protocol_helper::msb_mask<Bits - 1, Start, T>::value };
     };
 
-    /// Base implementation of lbit_mask
+    /// Base implementation of msb_mask
     template<size_t Start, class T>
-    struct lbit_mask<0, Start, T>
+    struct msb_mask<0, Start, T>
     {
 	enum: T { value = 0 };
     };
@@ -155,10 +154,10 @@ namespace protocol_helper
     struct field_value<false, Field_Bits, Field_Offset, T>
     {
 	static const T get(unsigned char const * const buf) {
-	    // Select the bits from buf with lbit_mask and right shift
+	    // Select the bits from buf with msb_mask and right shift
 	    // the resulting value the appropriate bits to fit in the
 	    // space made by the true specialization
-	    return (buf[0] & protocol_helper::lbit_mask<Field_Bits, protocol_helper::field_mask_start<Field_Offset>::value, unsigned char>::value) >> (protocol_helper::bits_per_byte::value - Field_Bits - protocol_helper::field_mask_start<Field_Offset>::value);
+	    return (buf[0] & protocol_helper::msb_mask<Field_Bits, protocol_helper::field_mask_start<Field_Offset>::value, unsigned char>::value) >> (protocol_helper::bits_per_byte::value - Field_Bits - protocol_helper::field_mask_start<Field_Offset>::value);
 	}
     };
 
@@ -167,12 +166,12 @@ namespace protocol_helper
     struct field_value<true, Field_Bits, Field_Offset, T>
     {
 	static const T get(unsigned char const * const buf) {
-	    // Select the bits from buf with lbit_mask and left shift
+	    // Select the bits from buf with msb_mask and left shift
 	    // the resulting value the appropriate bits to fit the
 	    // next byte's value.  The formula below is:
 
 	    // buf[0] & (mask to select field value in this byte) << (number of bits to fit the remaining field bits)
-	    return ((buf[0] & protocol_helper::lbit_mask<protocol_helper::field_mask_bits<Field_Bits, Field_Offset>::value, protocol_helper::field_mask_start<Field_Offset>::value, unsigned char>::value) << (Field_Bits - protocol_helper::field_mask_bits<Field_Bits, Field_Offset>::value)) +
+	    return ((buf[0] & protocol_helper::msb_mask<protocol_helper::field_mask_bits<Field_Bits, Field_Offset>::value, protocol_helper::field_mask_start<Field_Offset>::value, unsigned char>::value) << (Field_Bits - protocol_helper::field_mask_bits<Field_Bits, Field_Offset>::value)) +
 		protocol_helper::field_value<(Field_Bits - protocol_helper::field_mask_bits<Field_Bits, Field_Offset>::value > protocol_helper::bits_per_byte::value), Field_Bits - protocol_helper::field_mask_bits<Field_Bits, Field_Offset>::value, 0, T>::get(buf + 1);
 	}
     };
