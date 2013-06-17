@@ -171,6 +171,16 @@ namespace protocol_helper
 	    // space made by the true specialization
 	    return (buf[0] & protocol_helper::msb_mask<Field_Bits, protocol_helper::field_mask_start<Field_Offset>::value, unsigned char>::value) >> (protocol_helper::bits_per_byte::value - Field_Bits - protocol_helper::field_mask_start<Field_Offset>::value);
 	}
+
+	static const void set(unsigned char * const buf, const T& value) {
+	    // Clear the current value
+	    buf[0] &= static_cast<unsigned char>(~protocol_helper::msb_mask<Field_Bits,
+									    protocol_helper::field_mask_start<Field_Offset>::value,
+									    unsigned char>::value);
+
+	    // Set the new value
+	    buf[0] |= ((value & protocol_helper::msb_mask<Field_Bits, std::numeric_limits<T>::digits - Field_Bits, T>::value) << (protocol_helper::bits_per_byte::value - Field_Bits - protocol_helper::field_mask_start<Field_Offset>::value));
+	}
     };
 
     /// Specialization for when the field spans multiple bytes
@@ -185,6 +195,24 @@ namespace protocol_helper
 	    // buf[0] & (mask to select field value in this byte) << (number of bits to fit the remaining field bits)
 	    return ((buf[0] & protocol_helper::msb_mask<protocol_helper::field_mask_bits<Field_Bits, Field_Offset>::value, protocol_helper::field_mask_start<Field_Offset>::value, unsigned char>::value) << (Field_Bits - protocol_helper::field_mask_bits<Field_Bits, Field_Offset>::value)) +
 		protocol_helper::field_value<(Field_Bits - protocol_helper::field_mask_bits<Field_Bits, Field_Offset>::value > protocol_helper::bits_per_byte::value), Field_Bits - protocol_helper::field_mask_bits<Field_Bits, Field_Offset>::value, 0, T>::get(buf + 1);
+	}
+
+	static void set(unsigned char * const buf, const T& val) {
+	    // Clear the current value
+	    buf[0] &= static_cast<unsigned char>(~protocol_helper::msb_mask<protocol_helper::field_mask_bits<Field_Bits, Field_Offset>::value,
+									    protocol_helper::field_mask_start<Field_Offset>::value,
+									    unsigned char>::value);
+	    // Set current byte
+	    buf[0] |= ((val & protocol_helper::msb_mask<protocol_helper::field_mask_bits<Field_Bits, Field_Offset>::value,
+							std::numeric_limits<T>::digits - Field_Bits, T>::value) >> 
+		       (Field_Bits - protocol_helper::field_mask_bits<Field_Bits, Field_Offset>::value));
+
+	    // Set next byte
+	    protocol_helper::field_value<
+		(Field_Bits - protocol_helper::field_mask_bits<Field_Bits, Field_Offset>::value > protocol_helper::bits_per_byte::value),
+		Field_Bits - protocol_helper::field_mask_bits<Field_Bits, Field_Offset>::value,
+		0,
+		T>::set(buf + 1, val);
 	}
     };
 
@@ -207,6 +235,15 @@ namespace protocol_helper
 	template<size_t I>
 	static const typename protocol_helper::field_type<I, Tuple>::type field_value(unsigned char const * const buf);
 
+	/// Sets a protocol field's value
+	/**
+	 *  @tparam I Order number of the field in the protocol tuple,
+	 *  @param buf Protocol buffer
+	 *  @param val Value to set the field to
+	 */
+	template<size_t I>
+	static void field_value(unsigned char * const buf, const typename protocol_helper::field_type<I, Tuple>::type& value);
+
 	/// Length in bits of the protocol
 	enum : size_t { bit_length = protocol_helper::protocol_length<Tuple>::value };
 
@@ -226,5 +263,15 @@ namespace protocol_helper
 		protocol_helper::field_bits<I, Tuple>::value,
 		protocol_helper::field_bit_offset<I, Tuple>::value,
 		typename protocol_helper::field_type<I, Tuple>::type>::get(&buf[protocol_helper::field_byte_offset<I, Tuple>::value]);
+    }
+
+    template<class Tuple>
+    template<size_t I>
+    void protocol<Tuple>::field_value(unsigned char * const buf, const typename protocol_helper::field_type<I, Tuple>::type& val)
+    {
+	protocol_helper::field_value<((protocol_helper::field_bit_offset<I, Tuple>::value % protocol_helper::bits_per_byte::value) + protocol_helper::field_bits<I, Tuple>::value > protocol_helper::bits_per_byte::value),
+	    protocol_helper::field_bits<I, Tuple>::value,
+	    protocol_helper::field_bit_offset<I, Tuple>::value,
+	    typename protocol_helper::field_type<I, Tuple>::type>::set(&buf[protocol_helper::field_byte_offset<I, Tuple>::value], val);
     }
 }
