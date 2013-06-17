@@ -172,7 +172,7 @@ namespace protocol_helper
 	    return (buf[0] & protocol_helper::msb_mask<Field_Bits, protocol_helper::field_mask_start<Field_Offset>::value, unsigned char>::value) >> (protocol_helper::bits_per_byte::value - Field_Bits - protocol_helper::field_mask_start<Field_Offset>::value);
 	}
 
-	static const void set(unsigned char * const buf, const T& value) {
+	static const void set(unsigned char * const buf, const T value) {
 	    // Clear the current value
 	    buf[0] &= static_cast<unsigned char>(~protocol_helper::msb_mask<Field_Bits,
 									    protocol_helper::field_mask_start<Field_Offset>::value,
@@ -197,7 +197,7 @@ namespace protocol_helper
 		protocol_helper::field_value<(Field_Bits - protocol_helper::field_mask_bits<Field_Bits, Field_Offset>::value > protocol_helper::bits_per_byte::value), Field_Bits - protocol_helper::field_mask_bits<Field_Bits, Field_Offset>::value, 0, T>::get(buf + 1);
 	}
 
-	static void set(unsigned char * const buf, const T& val) {
+	static void set(unsigned char * const buf, const T val) {
 	    // Clear the current value
 	    buf[0] &= static_cast<unsigned char>(~protocol_helper::msb_mask<protocol_helper::field_mask_bits<Field_Bits, Field_Offset>::value,
 									    protocol_helper::field_mask_start<Field_Offset>::value,
@@ -242,7 +242,7 @@ namespace protocol_helper
 	 *  @param val Value to set the field to
 	 */
 	template<size_t I>
-	static void field_value(unsigned char * const buf, const typename protocol_helper::field_type<I, Tuple>::type& value);
+	static void field_value(unsigned char * const buf, const typename protocol_helper::field_type<I, Tuple>::type value);
 
 	/// Length in bits of the protocol
 	enum : size_t { bit_length = protocol_helper::protocol_length<Tuple>::value };
@@ -267,7 +267,7 @@ namespace protocol_helper
 
     template<class Tuple>
     template<size_t I>
-    void protocol<Tuple>::field_value(unsigned char * const buf, const typename protocol_helper::field_type<I, Tuple>::type& val)
+    void protocol<Tuple>::field_value(unsigned char * const buf, const typename protocol_helper::field_type<I, Tuple>::type val)
     {
 	protocol_helper::field_value<((protocol_helper::field_bit_offset<I, Tuple>::value % protocol_helper::bits_per_byte::value) + protocol_helper::field_bits<I, Tuple>::value > protocol_helper::bits_per_byte::value),
 	    protocol_helper::field_bits<I, Tuple>::value,
