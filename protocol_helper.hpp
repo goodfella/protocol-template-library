@@ -197,6 +197,8 @@ namespace protocol_helper
     {
 	public:
 
+	typedef Tuple tuple;
+
 	/// Accessor for a protocol field given a protocol buffer
 	/**
 	 *  @tparam I Order number of the field in the protocol tuple.
@@ -210,6 +212,8 @@ namespace protocol_helper
 
 	/// Length in bytes required to store the protocols buffer
 	enum : size_t { byte_length = protocol<Tuple>::bit_length % protocol_helper::bits_per_byte::value ? (protocol<Tuple>::bit_length / protocol_helper::bits_per_byte::value) + 1 : protocol<Tuple>::bit_length / protocol_helper::bits_per_byte::value };
+
+	enum : size_t { field_count = std::tuple_size<Tuple>::value };
     };
 
     template<class Tuple>
