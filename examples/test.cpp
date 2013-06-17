@@ -27,6 +27,81 @@ typedef tuple<
 
 typedef protocol<test> test_proto;
 
+template<size_t Bit, size_t Field, class Protocol>
+struct test_field_bit
+{
+    static void test(unsigned char * const buf)
+    {
+	typedef typename field_type<Field, typename Protocol::tuple>::type ftype;
+
+	ftype val = msb_mask<1, numeric_limits<ftype>::digits - field_bits<Field, typename Protocol::tuple>::value + Bit, ftype>::value;
+
+	test_proto::field_value<Field>(buf, val);
+
+	if (val != test_proto::field_value<Field>(buf)) {
+	    stringstream ss;
+	    ss << "field: " << std::dec << Field <<
+		", Bit: " << std::dec << Bit <<
+		std::hex << std::showbase << " test failure: expected = " << val <<
+		", actual = " << test_proto::field_value<Field>(buf);
+
+	    throw logic_error(ss.str());
+	}
+
+	test_field_bit<Bit - 1, Field, Protocol>::test(buf);
+    }
+};
+
+template<size_t Field, class Protocol>
+struct test_field_bit<0, Field, Protocol>
+{
+    static void test(unsigned char * const buf)
+    {
+	typedef typename field_type<Field, typename Protocol::tuple>::type ftype;
+
+	ftype val = msb_mask<1, numeric_limits<ftype>::digits - field_bits<Field, typename Protocol::tuple>::value, ftype>::value;
+
+	test_proto::field_value<Field>(buf, val);
+
+	if (val != test_proto::field_value<Field>(buf)) {
+	    stringstream ss;
+	    ss << "field: " << std::dec << Field <<
+		", Bit: " << std::dec << 0 <<
+		std::hex << std::showbase << " test failure: expected = " << val <<
+		", actual = " << test_proto::field_value<Field>(buf);
+
+	    throw logic_error(ss.str());
+	}
+
+	return;
+    }
+};
+
+template<size_t Field, class Protocol>
+struct test_field
+{
+    static void test(unsigned char * const buf)
+    {
+	test_field_bit<field_bits<Field, typename Protocol::tuple>::value - 1, Field, Protocol>::test(buf);
+	test_field<Field - 1, Protocol>::test(buf);
+    }
+};
+
+template<class Protocol>
+struct test_field<0, Protocol>
+{
+    static void test(unsigned char * const buf)
+    {
+	test_field_bit<field_bits<0, typename Protocol::tuple>::value - 1, 0, Protocol>::test(buf);
+    }
+};
+
+template<class Protocol>
+void test_protocol(unsigned char * const buf)
+{
+    test_field<Protocol::field_count - 1, Protocol>::test(buf);
+}
+
 template<size_t I>
 void check_value(unsigned char const * const buf)
 {
@@ -45,53 +120,10 @@ int main()
 {
     unsigned char buf[11];
 
-    memset(buf, 0, sizeof(buf));
-
-    // Each field is set so that its first bit and last bit are 1.
-    // This makes it easy to check protocol::field_value
-    buf[0] = 0x81;  // field 0
-    buf[1] = 0x80;  // field 1
-    buf[1] |= 0x42; // field 2
-    buf[1] |= 0x01; // beginning of field 3
-    buf[2] = 0x00;  // middle of field 3
-    buf[3] = 0x01;  // end of field 3
-    buf[4] = 0x80;  // beginning of field 4
-    buf[5] = 0x80;  // end of field 4
-    buf[5] |= 0x41; // field 5
-    buf[6] = 0x80;  // beginning of field 6
-    buf[7] = 0x01;  // end of field 6
-    buf[8] = 0x80;  // field 7
-    buf[8] |= 0x41; // field 8
-    buf[9] |= 0x80; // field 9
-    buf[9] |= 0x40; // beginning of field 10
-    buf[10] = 0x40; // end of field 10
-
-    cout << "protocol bit length: " << test_proto::bit_length << endl;
-    cout << "protocol byte length: " << test_proto::byte_length << endl;
-    cout << "field 0: " << std::hex << std::showbase << test_proto::field_value<0>(buf) << endl;
-    cout << "field 1: " << std::hex << std::showbase << test_proto::field_value<1>(buf) << endl;
-    cout << "field 2: " << std::hex << std::showbase << test_proto::field_value<2>(buf) << endl;
-    cout << "field 3: " << std::hex << std::showbase << test_proto::field_value<3>(buf) << endl;
-    cout << "field 4: " << std::hex << std::showbase << test_proto::field_value<4>(buf) << endl;
-    cout << "field 5: " << std::hex << std::showbase << test_proto::field_value<5>(buf) << endl;
-    cout << "field 6: " << std::hex << std::showbase << test_proto::field_value<6>(buf) << endl;
-    cout << "field 7: " << std::hex << std::showbase << test_proto::field_value<7>(buf) << endl;
-    cout << "field 8: " << std::hex << std::showbase << test_proto::field_value<8>(buf) << endl;
-    cout << "field 9: " << std::hex << std::showbase << test_proto::field_value<9>(buf) << endl;
-    cout << "field 10: " << std::hex << std::showbase << test_proto::field_value<10>(buf) << endl;
+    memset(buf, 1, sizeof(buf));
 
     try {
-	check_value<0>(buf);
-	check_value<1>(buf);
-	check_value<2>(buf);
-	check_value<3>(buf);
-	check_value<4>(buf);
-	check_value<5>(buf);
-	check_value<6>(buf);
-	check_value<7>(buf);
-	check_value<8>(buf);
-	check_value<9>(buf);
-	check_value<10>(buf);
+	test_protocol<test_proto>(buf);
     }
     catch(exception& ex)
     {
