@@ -102,6 +102,124 @@ void test_protocol(unsigned char * const buf)
     test_field<Protocol::field_count - 1, Protocol>::test(buf);
 }
 
+template <size_t Bit, size_t Field_Offset, size_t Field_Size, class Type>
+struct test_bit
+{
+    static void test(unsigned char * const buf) {
+	typedef field_value<((Field_Offset % bits_per_byte::value) + Field_Size > bits_per_byte::value), Field_Size, Field_Offset, Type> fv_type;
+	Type val = msb_mask<1, numeric_limits<Type>::digits - Field_Size + Bit, Type>::value;
+
+	fv_type::set(buf, val);
+
+	if (val != fv_type::get(buf)) {
+	    stringstream ss;
+	    ss << "bit: " << std::dec << Bit <<
+		", offset: " << std::dec << Field_Offset <<
+		", field size: " << std::dec << Field_Size <<
+		", type size: " << std::dec << numeric_limits<Type>::digits <<
+		", expected value: " << std::hex << std::showbase << val <<
+		", actual value: " << std::hex << std::showbase << fv_type::get(buf) << endl;
+
+	    throw logic_error(ss.str());
+	}
+
+	test_bit<Bit - 1, Field_Offset, Field_Size, Type>::test(buf);
+    }
+};
+
+template <size_t Field_Offset, size_t Field_Size, class Type>
+struct test_bit<0, Field_Offset, Field_Size, Type>
+{
+    static void test(unsigned char * const buf) {
+	typedef field_value<((Field_Offset % bits_per_byte::value) + Field_Size > bits_per_byte::value), Field_Size, Field_Offset, Type> fv_type;
+	Type val = msb_mask<1, numeric_limits<Type>::digits - Field_Size, Type>::value;
+
+	fv_type::set(buf, val);
+
+	if (val != fv_type::get(buf)) {
+	    stringstream ss;
+	    ss << "bit: " << std::dec << 0 <<
+		", offset: " << std::dec << Field_Offset <<
+		", field size: " << std::dec << Field_Size <<
+		", type size: " << std::dec << numeric_limits<Type>::digits <<
+		", expected value: " << std::hex << std::showbase << val <<
+		", actual value: " << std::hex << std::showbase << fv_type::get(buf) << endl;
+
+	    throw logic_error(ss.str());
+	}
+    }
+};
+
+template<size_t Field_Offset, size_t Field_Size, class Type>
+struct test_field_offset
+{
+    static void test() {
+	unsigned char buf[(Field_Offset + Field_Size) % 8 ? ((Field_Offset + Field_Size) / 8) + 1 : (Field_Offset + Field_Size) / 8];
+
+	memset(buf, 1, sizeof(buf));
+	test_bit<Field_Size - 1, Field_Offset, Field_Size, Type>::test(buf);
+
+	memset(buf, 0, sizeof(buf));
+	test_bit<Field_Size - 1, Field_Offset, Field_Size, Type>::test(buf);
+
+	test_field_offset<Field_Offset - 1, Field_Size, Type>::test();
+    }
+};
+
+template<size_t Field_Size, class Type>
+struct test_field_offset<0, Field_Size, Type>
+{
+    static void test() {
+	unsigned char buf[(Field_Size) % 8 ? ((Field_Size) / 8) + 1 : (Field_Size) / 8];
+
+	memset(buf, 1, sizeof(buf));
+	test_bit<Field_Size - 1, 0, Field_Size, Type>::test(buf);
+
+	memset(buf, 0, sizeof(buf));
+	test_bit<Field_Size - 1, 0, Field_Size, Type>::test(buf);
+    }
+};
+
+template <size_t Field_Size, class Type>
+struct test_field_size
+{
+    static void test() {
+	test_field_offset<7, Field_Size, Type>::test();
+	test_field_size<Field_Size - 1, Type>::test();
+    }
+};
+
+template<class Type>
+struct test_field_size<0, Type>
+{
+    static void test() {
+	return;
+    }
+};
+
+template <size_t I, class Types_Tuple>
+struct test_type
+{
+    static void test() {
+	test_field_size<numeric_limits<typename tuple_element<I, Types_Tuple>::type>::digits, typename tuple_element<I, Types_Tuple>::type>::test();
+	test_type<I - 1, Types_Tuple>::test();
+    }
+};
+
+template <class Types_Tuple>
+struct test_type<0, Types_Tuple>
+{
+    static void test() {
+	test_field_size<numeric_limits<typename tuple_element<0, Types_Tuple>::type>::digits, typename tuple_element<0, Types_Tuple>::type>::test();
+    }
+};
+
+template <class Types_Tuple>
+void test_types()
+{
+    test_type<tuple_size<Types_Tuple>::value - 1, Types_Tuple>::test();
+}
+
 template<size_t I>
 void check_value(unsigned char const * const buf)
 {
@@ -123,6 +241,7 @@ int main()
     memset(buf, 1, sizeof(buf));
 
     try {
+	test_types<tuple<uint16_t> >();
 	test_protocol<test_proto>(buf);
     }
     catch(exception& ex)
