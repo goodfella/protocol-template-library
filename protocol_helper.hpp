@@ -111,10 +111,10 @@ namespace protocol_helper
      *  @tparam the number of bits in the byte for the field
      *  @tparam The field's offset into the byte
      */
-    template<size_t Field_Bits, size_t Field_Offset>
+    template<size_t Field_Offset>
     struct field_mask_bits
     {
-	enum : size_t { value = Field_Bits > protocol_helper::bits_per_byte::value ? protocol_helper::bits_per_byte::value - field_mask_start<Field_Offset>::value : Field_Bits };
+	enum : size_t { value = protocol_helper::bits_per_byte::value - field_mask_start<Field_Offset>::value };
     };
 
     /// Returns the length in bits of the protocol
@@ -193,24 +193,24 @@ namespace protocol_helper
 	    // next byte's value.  The formula below is:
 
 	    // buf[0] & (mask to select field value in this byte) << (number of bits to fit the remaining field bits)
-	    return ((buf[0] & protocol_helper::msb_mask<protocol_helper::field_mask_bits<Field_Bits, Field_Offset>::value, protocol_helper::field_mask_start<Field_Offset>::value, unsigned char>::value) << (Field_Bits - protocol_helper::field_mask_bits<Field_Bits, Field_Offset>::value)) +
-		protocol_helper::field_value<(Field_Bits - protocol_helper::field_mask_bits<Field_Bits, Field_Offset>::value > protocol_helper::bits_per_byte::value), Field_Bits - protocol_helper::field_mask_bits<Field_Bits, Field_Offset>::value, 0, T>::get(buf + 1);
+	    return ((buf[0] & protocol_helper::msb_mask<protocol_helper::field_mask_bits<Field_Offset>::value, protocol_helper::field_mask_start<Field_Offset>::value, unsigned char>::value) << (Field_Bits - protocol_helper::field_mask_bits<Field_Offset>::value)) +
+		protocol_helper::field_value<(Field_Bits - protocol_helper::field_mask_bits<Field_Offset>::value > protocol_helper::bits_per_byte::value), Field_Bits - protocol_helper::field_mask_bits<Field_Offset>::value, 0, T>::get(buf + 1);
 	}
 
 	static void set(unsigned char * const buf, const T val) {
 	    // Clear the current value
-	    buf[0] &= static_cast<unsigned char>(~protocol_helper::msb_mask<protocol_helper::field_mask_bits<Field_Bits, Field_Offset>::value,
+	    buf[0] &= static_cast<unsigned char>(~protocol_helper::msb_mask<protocol_helper::field_mask_bits<Field_Offset>::value,
 									    protocol_helper::field_mask_start<Field_Offset>::value,
 									    unsigned char>::value);
 	    // Set current byte
-	    buf[0] |= ((val & protocol_helper::msb_mask<protocol_helper::field_mask_bits<Field_Bits, Field_Offset>::value,
+	    buf[0] |= ((val & protocol_helper::msb_mask<protocol_helper::field_mask_bits<Field_Offset>::value,
 							std::numeric_limits<T>::digits - Field_Bits, T>::value) >> 
-		       (Field_Bits - protocol_helper::field_mask_bits<Field_Bits, Field_Offset>::value));
+		       (Field_Bits - protocol_helper::field_mask_bits<Field_Offset>::value));
 
 	    // Set next byte
 	    protocol_helper::field_value<
-		(Field_Bits - protocol_helper::field_mask_bits<Field_Bits, Field_Offset>::value > protocol_helper::bits_per_byte::value),
-		Field_Bits - protocol_helper::field_mask_bits<Field_Bits, Field_Offset>::value,
+		(Field_Bits - protocol_helper::field_mask_bits<Field_Offset>::value > protocol_helper::bits_per_byte::value),
+		Field_Bits - protocol_helper::field_mask_bits<Field_Offset>::value,
 		0,
 		T>::set(buf + 1, val);
 	}
