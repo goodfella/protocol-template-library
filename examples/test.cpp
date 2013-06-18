@@ -236,12 +236,35 @@ void check_value(unsigned char const * const buf)
 
 int main()
 {
-    unsigned char buf[11];
-
-    memset(buf, 1, sizeof(buf));
+    unsigned char buf[(numeric_limits<uint64_t>::digits / 8) + 1];
 
     try {
 	test_types<tuple<uint16_t> >();
+
+	memset(buf, 0, sizeof(buf));
+	test_bit<0, 7, numeric_limits<uint64_t>::digits, uint64_t>::test(buf);
+
+	memset(buf, 0, sizeof(buf));
+	test_bit<0, 6, numeric_limits<uint64_t>::digits, uint64_t>::test(buf);
+
+	memset(buf, 0, sizeof(buf));
+	test_bit<0, 5, numeric_limits<uint64_t>::digits, uint64_t>::test(buf);
+
+	memset(buf, 0, sizeof(buf));
+	test_bit<0, 4, numeric_limits<uint64_t>::digits, uint64_t>::test(buf);
+
+	memset(buf, 0, sizeof(buf));
+	test_bit<0, 3, numeric_limits<uint64_t>::digits, uint64_t>::test(buf);
+
+	memset(buf, 0, sizeof(buf));
+	test_bit<0, 2, numeric_limits<uint64_t>::digits, uint64_t>::test(buf);
+
+	memset(buf, 0, sizeof(buf));
+	test_bit<0, 1, numeric_limits<uint64_t>::digits, uint64_t>::test(buf);
+
+	memset(buf, 0, sizeof(buf));
+	test_bit<0, 0, numeric_limits<uint64_t>::digits, uint64_t>::test(buf);
+
 	test_protocol<test_proto>(buf);
     }
     catch(exception& ex)
