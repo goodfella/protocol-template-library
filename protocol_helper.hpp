@@ -193,7 +193,7 @@ namespace protocol_helper
 	    // next byte's value.  The formula below is:
 
 	    // buf[0] & (mask to select field value in this byte) << (number of bits to fit the remaining field bits)
-	    return ((buf[0] & protocol_helper::msb_mask<protocol_helper::field_mask_bits<Field_Offset>::value, protocol_helper::field_mask_start<Field_Offset>::value, unsigned char>::value) << (Field_Bits - protocol_helper::field_mask_bits<Field_Offset>::value)) +
+	    return (static_cast<T>((buf[0] & protocol_helper::msb_mask<protocol_helper::field_mask_bits<Field_Offset>::value, protocol_helper::field_mask_start<Field_Offset>::value, unsigned char>::value)) << (Field_Bits - protocol_helper::field_mask_bits<Field_Offset>::value)) +
 		protocol_helper::field_value<(Field_Bits - protocol_helper::field_mask_bits<Field_Offset>::value > protocol_helper::bits_per_byte::value), Field_Bits - protocol_helper::field_mask_bits<Field_Offset>::value, 0, T>::get(buf + 1);
 	}
 
