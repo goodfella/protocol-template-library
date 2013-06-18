@@ -141,7 +141,7 @@ namespace protocol_helper
     template<size_t Bits, size_t Start, class T>
     struct msb_mask
     {
-	enum : T { value = (1 << (std::numeric_limits<T>::digits - (Bits + Start))) + protocol_helper::msb_mask<Bits - 1, Start, T>::value };
+	enum : T { value = (static_cast<T>(1) << (std::numeric_limits<T>::digits - (Bits + Start))) + protocol_helper::msb_mask<Bits - 1, Start, T>::value };
     };
 
     /// Base implementation of msb_mask
