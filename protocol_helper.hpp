@@ -21,6 +21,12 @@ namespace protocol_helper
     template<>
     struct unsigned_type_constraint<true> {};
 
+    struct big_endian;
+    struct little_endian;
+
+    /// Used to specify that a protocol's fields have their own endianess
+    struct mixed_endian;
+
     /// Represents a field in a binary protocol
     /**
      *  @tparam Bits Number of bits that make up the field
@@ -153,17 +159,19 @@ namespace protocol_helper
 
     /// Returns the value of a field
     /**
-     *   @tparam span True if the field spans multiple bytes
-     *   @tparam Field_Bits The number of bits in a field
+     *   @tparam Span True if the field spans multiple bytes
+     *   @tparam Endianess The endianess of the field
+     *   @tparam Field_Size The total number of bits in the field
+     *   @tparam Field_Bits The remaining number of bits in a field to process
      *   @tparam Field_Offset The number of bits prior to this field
      *   @tparam The type used to represent the field
      */
-    template<bool Span, size_t Field_Bits, size_t Field_Offset, class T>
+    template<bool Span, class Endianess, size_t Field_Size, size_t Field_Bits, size_t Field_Offset, class T>
     struct field_value;
 
     /// Specialization for when the field does not span multiple bytes
-    template<size_t Field_Bits, size_t Field_Offset, class T>
-    struct field_value<false, Field_Bits, Field_Offset, T>
+    template<size_t Field_Size, size_t Field_Bits, size_t Field_Offset, class T>
+    struct field_value<false, protocol_helper::big_endian, Field_Size, Field_Bits, Field_Offset, T>
     {
 	static const T get(unsigned char const * const buf) {
 	    // Select the bits from buf with msb_mask and right shift
@@ -189,8 +197,8 @@ namespace protocol_helper
     };
 
     /// Specialization for when the field spans multiple bytes
-    template<size_t Field_Bits, size_t Field_Offset, class T>
-    struct field_value<true, Field_Bits, Field_Offset, T>
+    template<size_t Field_Size, size_t Field_Bits, size_t Field_Offset, class T>
+    struct field_value<true, protocol_helper::big_endian, Field_Size, Field_Bits, Field_Offset, T>
     {
 	static const T get(unsigned char const * const buf) {
 	    // Select the bits from buf with msb_mask and left shift
@@ -205,6 +213,8 @@ namespace protocol_helper
 		    (Field_Bits - protocol_helper::byte_mask_len<Field_Offset>::value)) +
 
 		protocol_helper::field_value<(Field_Bits - protocol_helper::byte_mask_len<Field_Offset>::value > protocol_helper::bits_per_byte::value),
+		    protocol_helper::big_endian,
+		    Field_Size,
 		    Field_Bits - protocol_helper::byte_mask_len<Field_Offset>::value,
 		    0, T>::get(buf + 1);
 	}
@@ -222,22 +232,43 @@ namespace protocol_helper
 	    // Set next byte
 	    protocol_helper::field_value<
 		(Field_Bits - protocol_helper::byte_mask_len<Field_Offset>::value > protocol_helper::bits_per_byte::value),
+		protocol_helper::big_endian,
+		Field_Size,
 		Field_Bits - protocol_helper::byte_mask_len<Field_Offset>::value,
 		0,
 		T>::set(buf + 1, val);
 	}
     };
 
-    /// Wrapper around a protocol tuple
+    /// Base class for a protocol
     /**
-     *  @tparam Tuple The tuple that represents the protocol
+     *  Defines a protocol's members that are endianess agnostic
      */
     template<class Tuple>
-    class protocol
+    struct protocol_base
+    {
+	typedef Tuple tuple;
+
+	/// Length in bits of the protocol
+	enum : size_t { bit_length = protocol_helper::protocol_length<Tuple>::value };
+
+	/// Length in bytes required to store the protocols buffer
+	enum : size_t { byte_length = protocol_base<Tuple>::bit_length % protocol_helper::bits_per_byte::value ? (protocol_base<Tuple>::bit_length / protocol_helper::bits_per_byte::value) + 1 : protocol_base<Tuple>::bit_length / protocol_helper::bits_per_byte::value };
+
+	enum : size_t { field_count = std::tuple_size<Tuple>::value };
+    };
+
+    /// Wrapper around a protocol tuple
+    /**
+     *  @tparam Endianess the endianess of the protocol
+     *  @tparam Tuple The tuple that represents the protocol
+     */
+    template<class Endianess, class Tuple>
+    class protocol: public protocol_base<Tuple>
     {
 	public:
 
-	typedef Tuple tuple;
+	typedef Endianess endianess;
 
 	/// Accessor for a protocol field given a protocol buffer
 	/**
@@ -255,33 +286,29 @@ namespace protocol_helper
 	 */
 	template<size_t I>
 	static void field_value(unsigned char * const buf, const typename protocol_helper::field_type<I, Tuple>::type value);
-
-	/// Length in bits of the protocol
-	enum : size_t { bit_length = protocol_helper::protocol_length<Tuple>::value };
-
-	/// Length in bytes required to store the protocols buffer
-	enum : size_t { byte_length = protocol<Tuple>::bit_length % protocol_helper::bits_per_byte::value ? (protocol<Tuple>::bit_length / protocol_helper::bits_per_byte::value) + 1 : protocol<Tuple>::bit_length / protocol_helper::bits_per_byte::value };
-
-	enum : size_t { field_count = std::tuple_size<Tuple>::value };
     };
 
-    template<class Tuple>
+    template<class Endianess, class Tuple>
     template<size_t I>
-    const typename protocol_helper::field_type<I, Tuple>::type protocol<Tuple>::field_value(unsigned char const * const buf)
+    const typename protocol_helper::field_type<I, Tuple>::type protocol<Endianess, Tuple>::field_value(unsigned char const * const buf)
     {
 	return
 	    protocol_helper::field_value<
 		((protocol_helper::field_bit_offset<I, Tuple>::value % protocol_helper::bits_per_byte::value) + protocol_helper::field_bits<I, Tuple>::value > protocol_helper::bits_per_byte::value),
+		Endianess,
+		protocol_helper::field_bits<I, Tuple>::value,
 		protocol_helper::field_bits<I, Tuple>::value,
 		protocol_helper::field_bit_offset<I, Tuple>::value,
 		typename protocol_helper::field_type<I, Tuple>::type>::get(&buf[protocol_helper::field_byte_offset<I, Tuple>::value]);
     }
 
-    template<class Tuple>
+    template<class Endianess, class Tuple>
     template<size_t I>
-    void protocol<Tuple>::field_value(unsigned char * const buf, const typename protocol_helper::field_type<I, Tuple>::type val)
+    void protocol<Endianess, Tuple>::field_value(unsigned char * const buf, const typename protocol_helper::field_type<I, Tuple>::type val)
     {
 	protocol_helper::field_value<((protocol_helper::field_bit_offset<I, Tuple>::value % protocol_helper::bits_per_byte::value) + protocol_helper::field_bits<I, Tuple>::value > protocol_helper::bits_per_byte::value),
+	    Endianess,
+	    protocol_helper::field_bits<I, Tuple>::value,
 	    protocol_helper::field_bits<I, Tuple>::value,
 	    protocol_helper::field_bit_offset<I, Tuple>::value,
 	    typename protocol_helper::field_type<I, Tuple>::type>::set(&buf[protocol_helper::field_byte_offset<I, Tuple>::value], val);

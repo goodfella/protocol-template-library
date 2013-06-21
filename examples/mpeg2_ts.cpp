@@ -12,7 +12,7 @@ typedef tuple<field<8, unsigned char>,  // sync byte
 	      field<13, unsigned short> // PID
 	      > mpeg2_ts_tpl;
 
-typedef protocol<mpeg2_ts_tpl> ts_proto;
+typedef protocol<big_endian, mpeg2_ts_tpl> ts_proto;
 
 enum class mpeg2_ts {
     sync_byte = 0,
