@@ -130,7 +130,7 @@ namespace protocol_helper
 			protocol_helper::field_bits<std::tuple_size<Tuple>::value - 1, Tuple>::value };
     };
 
-    /// Returns the mask necessary to select bits starting from the most significant bits
+    /// Returns the mask necessary to select bits starting from the most significant bit
     /**
      *  @tparam Bits the number of bits to select
      *
