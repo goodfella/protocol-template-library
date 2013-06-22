@@ -23,30 +23,30 @@ Defining Protocols
 
 Protocols in this library are defined by two attributes:
 
-* Endianess
+* Bit order
 * Field list
 
-Protocol endianess
+Protocol bit order
 ~~~~~~~~~~~~~~~~~~
 
-A protocol's endianess defines the order in which its field's bits are
+A protocol's bit order defines the order in which its field's bits are
 stored in a unsigned char buffer that represents the protocol's field
-data.  There are three endianess types that can be assigned to a
+data.  There are three bit field types that can be assigned to a
 protocol:
 
-* Big endian
-* Little endian
-* Mixed endian
+* Most significant bit first
+* Least significant bit first
+* Mixed bit order
 
-In a big endian protocol, a field's bits are stored from most
-significant to least significant.
+In a most significant bit first protocol, a field's bits are stored
+from most significant to least significant.
 
-In a little endian protocol, a field's bits are stored from least
+In a least significant protocol, a field's bits are stored from least
 significant to most significant.
 
-In a mixed endian protocol, each field defines its own endianess.  In
-this case each field's endianess can be either big endian, or little
-endian as described above.
+In a mixed bit order protocol, each field defines its own bit order.
+In this case each field's bit order can be either most significant bit
+first, or least significant bit first as described above.
 
 Protocol field list
 ~~~~~~~~~~~~~~~~~~~

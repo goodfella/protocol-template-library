@@ -21,11 +21,23 @@ namespace protocol_helper
     template<>
     struct unsigned_type_constraint<true> {};
 
-    struct big_endian;
-    struct little_endian;
+    /// Increments an object by one
+    template<class T>
+    struct increment
+    {
+	static T value(const T t) {
+	    return t + 1;
+	}
+    };
 
-    /// Used to specify that a protocol's fields have their own endianess
-    struct mixed_endian;
+    /// Decrements an object by one
+    template<class T>
+    struct decrement
+    {
+	static T value(const T t) {
+	    return t - 1;
+	}
+    };
 
     /// Represents a field in a binary protocol
     /**
@@ -157,90 +169,134 @@ namespace protocol_helper
 	enum: T { value = 0 };
     };
 
+    /// Definitions needed for most significant bit first protocols / fields
+    struct msb_first
+    {
+	/// Returns the field's next byte in a unsigned char protocol buffer
+	template<class T>
+	struct next_byte
+	{
+	    typedef protocol_helper::increment<T> type;
+	};
+
+	/// Generates the mask for a field's byte
+	template<size_t Bits, size_t Start, class T>
+	struct byte_mask
+	{
+	    typedef protocol_helper::msb_mask<Bits, Start, T> type;
+	};
+
+	/// Generates the index of the first byte for the field
+	template<size_t I, class Tuple>
+	struct first_byte
+	{
+	    typedef protocol_helper::field_start_byte<I, Tuple> type;
+	};
+    };
+
+    struct lsb_first;
+
+    /// Used to specify that a protocol's fields have their own bit
+    /// order
+    struct mixed_bit_order;
+
     /// Returns the value of a field
     /**
      *   @tparam Span True if the field spans multiple bytes
-     *   @tparam Endianess The endianess of the field
+     *   @tparam Bit_Order The bit order of the field
      *   @tparam Field_Size The total number of bits in the field
      *   @tparam Field_Bits The remaining number of bits in a field to process
      *   @tparam Field_Offset The number of bits prior to this field
      *   @tparam The type used to represent the field
      */
-    template<bool Span, class Endianess, size_t Field_Bits, size_t Field_Offset, class T>
+    template<bool Span, class Bit_Order, size_t Field_Bits, size_t Field_Offset, class T>
     struct field_value;
 
     /// Specialization for when the field does not span multiple bytes
-    template<size_t Field_Bits, size_t Field_Offset, class T>
-    struct field_value<false, protocol_helper::big_endian, Field_Bits, Field_Offset, T>
+    template<class Bit_Order, size_t Field_Bits, size_t Field_Offset, class T>
+    struct field_value<false, Bit_Order, Field_Bits, Field_Offset, T>
     {
+	typedef typename Bit_Order:: template byte_mask<Field_Bits,
+							protocol_helper::byte_mask_start<Field_Offset>::value,
+							unsigned char>::type byte_mask;
+
 	static const T get(unsigned char const * const buf) {
 	    // Select the bits from buf with msb_mask and right shift
 	    // the resulting value the appropriate bits to fit in the
 	    // space made by the true specialization
-	    return (buf[0] &
-		    protocol_helper::msb_mask<Field_Bits,
-					      protocol_helper::byte_mask_start<Field_Offset>::value,
-					      unsigned char>::value) >>
-	    (protocol_helper::bits_per_byte::value - Field_Bits - protocol_helper::byte_mask_start<Field_Offset>::value);
+	    return (buf[0] & byte_mask::value) >>
+		(protocol_helper::bits_per_byte::value - Field_Bits - protocol_helper::byte_mask_start<Field_Offset>::value);
 	}
 
 	static const void set(unsigned char * const buf, const T value) {
+
+	    typedef protocol_helper::msb_mask<Field_Bits,
+					      std::numeric_limits<T>::digits - Field_Bits,
+					      T> value_mask;
+
 	    // Clear the current value
-	    buf[0] &= static_cast<unsigned char>(~protocol_helper::msb_mask<Field_Bits,
-									    protocol_helper::byte_mask_start<Field_Offset>::value,
-									    unsigned char>::value);
+	    buf[0] &= static_cast<unsigned char>(~byte_mask::value);
 
 	    // Set the new value
-	    buf[0] |= ((value & protocol_helper::msb_mask<Field_Bits, std::numeric_limits<T>::digits - Field_Bits, T>::value) <<
+	    buf[0] |= ((value & value_mask::value) <<
 		       (protocol_helper::bits_per_byte::value - Field_Bits - protocol_helper::byte_mask_start<Field_Offset>::value));
 	}
     };
 
     /// Specialization for when the field spans multiple bytes
-    template<size_t Field_Bits, size_t Field_Offset, class T>
-    struct field_value<true, protocol_helper::big_endian, Field_Bits, Field_Offset, T>
+    template<class Bit_Order, size_t Field_Bits, size_t Field_Offset, class T>
+    struct field_value<true, Bit_Order, Field_Bits, Field_Offset, T>
     {
+	// mask type provided by the Bit_Order
+	typedef typename Bit_Order:: template byte_mask<protocol_helper::byte_mask_len<Field_Offset>::value,
+							protocol_helper::byte_mask_start<Field_Offset>::value,
+							unsigned char>::type byte_mask;
+
 	static const T get(unsigned char const * const buf) {
+
+	    typedef typename Bit_Order:: template next_byte<unsigned char const*>::type next_byte;
+
 	    // Select the bits from buf with msb_mask and left shift
 	    // the resulting value the appropriate bits to fit the
 	    // next byte's value.  The formula below is:
 
 	    // buf[0] & (mask to select field value in this byte) << (number of bits to fit the remaining field bits)
-	    return (static_cast<T>((buf[0] &
-				    protocol_helper::msb_mask<protocol_helper::byte_mask_len<Field_Offset>::value,
-							      protocol_helper::byte_mask_start<Field_Offset>::value,
-							      unsigned char>::value)) <<
+	    return (static_cast<T>((buf[0] & byte_mask::value)) <<
 		    (Field_Bits - protocol_helper::byte_mask_len<Field_Offset>::value)) +
 
 		protocol_helper::field_value<(Field_Bits - protocol_helper::byte_mask_len<Field_Offset>::value > protocol_helper::bits_per_byte::value),
-		    protocol_helper::big_endian,
+		    Bit_Order,
 		    Field_Bits - protocol_helper::byte_mask_len<Field_Offset>::value,
-		    0, T>::get(buf + 1);
+		    0, T>::get(next_byte::value(buf));
 	}
 
 	static void set(unsigned char * const buf, const T val) {
+
+	    typedef typename Bit_Order:: template next_byte<unsigned char* const>::type next_byte;
+	    typedef protocol_helper::msb_mask<protocol_helper::byte_mask_len<Field_Offset>::value,
+					      std::numeric_limits<T>::digits - Field_Bits,
+					      T> value_mask;
+
 	    // Clear the current value
-	    buf[0] &= static_cast<unsigned char>(~protocol_helper::msb_mask<protocol_helper::byte_mask_len<Field_Offset>::value,
-									    protocol_helper::byte_mask_start<Field_Offset>::value,
-									    unsigned char>::value);
+	    buf[0] &= static_cast<unsigned char>(~byte_mask::value);
+
 	    // Set current byte
-	    buf[0] |= ((val & protocol_helper::msb_mask<protocol_helper::byte_mask_len<Field_Offset>::value,
-							std::numeric_limits<T>::digits - Field_Bits, T>::value) >> 
+	    buf[0] |= ((val & value_mask::value) >>
 		       (Field_Bits - protocol_helper::byte_mask_len<Field_Offset>::value));
 
 	    // Set next byte
 	    protocol_helper::field_value<
 		(Field_Bits - protocol_helper::byte_mask_len<Field_Offset>::value > protocol_helper::bits_per_byte::value),
-		protocol_helper::big_endian,
+		Bit_Order,
 		Field_Bits - protocol_helper::byte_mask_len<Field_Offset>::value,
 		0,
-		T>::set(buf + 1, val);
+		T>::set(next_byte::value(buf), val);
 	}
     };
 
     /// Base class for a protocol
     /**
-     *  Defines a protocol's members that are endianess agnostic
+     *  Defines a protocol's members that are bit order agnostic
      */
     template<class Tuple>
     struct protocol_base
@@ -258,15 +314,15 @@ namespace protocol_helper
 
     /// Wrapper around a protocol tuple
     /**
-     *  @tparam Endianess the endianess of the protocol
+     *  @tparam Bit_Order the protocol's bit order
      *  @tparam Tuple The tuple that represents the protocol
      */
-    template<class Endianess, class Tuple>
+    template<class Bit_Order, class Tuple>
     class protocol: public protocol_base<Tuple>
     {
 	public:
 
-	typedef Endianess endianess;
+	typedef Bit_Order bit_order;
 
 	/// Accessor for a protocol field given a protocol buffer
 	/**
@@ -286,27 +342,35 @@ namespace protocol_helper
 	static void field_value(unsigned char * const buf, const typename protocol_helper::field_type<I, Tuple>::type value);
     };
 
-    template<class Endianess, class Tuple>
+    template<class Bit_Order, class Tuple>
     template<size_t I>
-    const typename protocol_helper::field_type<I, Tuple>::type protocol<Endianess, Tuple>::field_value(unsigned char const * const buf)
+    const typename protocol_helper::field_type<I, Tuple>::type protocol<Bit_Order, Tuple>::field_value(unsigned char const * const buf)
     {
+	/// template function that returns the first byte index for
+	/// the given bit order
+	typedef typename Bit_Order:: template first_byte<I, Tuple>::type first_byte;
+
 	return
 	    protocol_helper::field_value<
 		((protocol_helper::field_bit_offset<I, Tuple>::value % protocol_helper::bits_per_byte::value) + protocol_helper::field_bits<I, Tuple>::value > protocol_helper::bits_per_byte::value),
-		Endianess,
+		Bit_Order,
 		protocol_helper::field_bits<I, Tuple>::value,
 		protocol_helper::field_bit_offset<I, Tuple>::value,
-		typename protocol_helper::field_type<I, Tuple>::type>::get(&buf[protocol_helper::field_start_byte<I, Tuple>::value]);
+		typename protocol_helper::field_type<I, Tuple>::type>::get(&buf[first_byte::value]);
     }
 
-    template<class Endianess, class Tuple>
+    template<class Bit_Order, class Tuple>
     template<size_t I>
-    void protocol<Endianess, Tuple>::field_value(unsigned char * const buf, const typename protocol_helper::field_type<I, Tuple>::type val)
+    void protocol<Bit_Order, Tuple>::field_value(unsigned char * const buf, const typename protocol_helper::field_type<I, Tuple>::type val)
     {
+	/// template function that returns the first byte index for
+	/// the given bit order
+	typedef typename Bit_Order:: template first_byte<I, Tuple>::type first_byte;
+
 	protocol_helper::field_value<((protocol_helper::field_bit_offset<I, Tuple>::value % protocol_helper::bits_per_byte::value) + protocol_helper::field_bits<I, Tuple>::value > protocol_helper::bits_per_byte::value),
-	    Endianess,
+	    Bit_Order,
 	    protocol_helper::field_bits<I, Tuple>::value,
 	    protocol_helper::field_bit_offset<I, Tuple>::value,
-	    typename protocol_helper::field_type<I, Tuple>::type>::set(&buf[protocol_helper::field_start_byte<I, Tuple>::value], val);
+	    typename protocol_helper::field_type<I, Tuple>::type>::set(&buf[first_byte::value], val);
     }
 }
