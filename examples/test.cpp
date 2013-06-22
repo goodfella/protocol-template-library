@@ -106,7 +106,7 @@ template <size_t Bit, size_t Field_Offset, size_t Field_Size, class Type>
 struct test_bit
 {
     static void test(unsigned char * const buf) {
-	typedef field_value<((Field_Offset % bits_per_byte::value) + Field_Size > bits_per_byte::value), big_endian, Field_Size, Field_Size, Field_Offset, Type> fv_type;
+	typedef field_value<((Field_Offset % bits_per_byte::value) + Field_Size > bits_per_byte::value), big_endian, Field_Size, Field_Offset, Type> fv_type;
 	Type val = msb_mask<1, numeric_limits<Type>::digits - Field_Size + Bit, Type>::value;
 
 	fv_type::set(buf, val);
@@ -131,7 +131,7 @@ template <size_t Field_Offset, size_t Field_Size, class Type>
 struct test_bit<0, Field_Offset, Field_Size, Type>
 {
     static void test(unsigned char * const buf) {
-	typedef field_value<((Field_Offset % bits_per_byte::value) + Field_Size > bits_per_byte::value), big_endian, Field_Size, Field_Size, Field_Offset, Type> fv_type;
+	typedef field_value<((Field_Offset % bits_per_byte::value) + Field_Size > bits_per_byte::value), big_endian, Field_Size, Field_Offset, Type> fv_type;
 	Type val = msb_mask<1, numeric_limits<Type>::digits - Field_Size, Type>::value;
 
 	fv_type::set(buf, val);
