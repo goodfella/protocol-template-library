@@ -204,7 +204,6 @@ namespace protocol_helper
     /**
      *   @tparam Span True if the field spans multiple bytes
      *   @tparam Bit_Order The bit order of the field
-     *   @tparam Field_Size The total number of bits in the field
      *   @tparam Field_Bits The remaining number of bits in a field to process
      *   @tparam Field_Offset The number of bits prior to this field
      *   @tparam The type used to represent the field
@@ -309,6 +308,7 @@ namespace protocol_helper
 	/// Length in bytes required to store the protocols buffer
 	enum : size_t { byte_length = protocol_base<Tuple>::bit_length % protocol_helper::bits_per_byte::value ? (protocol_base<Tuple>::bit_length / protocol_helper::bits_per_byte::value) + 1 : protocol_base<Tuple>::bit_length / protocol_helper::bits_per_byte::value };
 
+	/// Number of fields the protocol has
 	enum : size_t { field_count = std::tuple_size<Tuple>::value };
     };
 
