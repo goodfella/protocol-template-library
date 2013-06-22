@@ -93,11 +93,11 @@ namespace protocol_helper
      *  the protocol
      */
     template<size_t I, class Tuple>
-    struct field_byte_offset;
+    struct field_start_byte;
 
     /// Implementation of byte_offset
     template<size_t I, class Tuple>
-    struct field_byte_offset
+    struct field_start_byte
     {
 	enum : size_t { value = protocol_helper::field_bit_offset<I, Tuple>::value / protocol_helper::bits_per_byte::value };
     };
@@ -296,7 +296,7 @@ namespace protocol_helper
 		Endianess,
 		protocol_helper::field_bits<I, Tuple>::value,
 		protocol_helper::field_bit_offset<I, Tuple>::value,
-		typename protocol_helper::field_type<I, Tuple>::type>::get(&buf[protocol_helper::field_byte_offset<I, Tuple>::value]);
+		typename protocol_helper::field_type<I, Tuple>::type>::get(&buf[protocol_helper::field_start_byte<I, Tuple>::value]);
     }
 
     template<class Endianess, class Tuple>
@@ -307,6 +307,6 @@ namespace protocol_helper
 	    Endianess,
 	    protocol_helper::field_bits<I, Tuple>::value,
 	    protocol_helper::field_bit_offset<I, Tuple>::value,
-	    typename protocol_helper::field_type<I, Tuple>::type>::set(&buf[protocol_helper::field_byte_offset<I, Tuple>::value], val);
+	    typename protocol_helper::field_type<I, Tuple>::type>::set(&buf[protocol_helper::field_start_byte<I, Tuple>::value], val);
     }
 }
