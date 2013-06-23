@@ -341,9 +341,9 @@ namespace protocol_helper
 	return
 	    protocol_helper::field_value<
 		((protocol_helper::field_bit_offset<I, Tuple>::value % protocol_helper::bits_per_byte::value) + protocol_helper::field_bits<I, Tuple>::value > protocol_helper::bits_per_byte::value),
-		Bit_Order,
 		protocol_helper::field_bits<I, Tuple>::value,
 		protocol_helper::field_bit_offset<I, Tuple>::value % protocol_helper::bits_per_byte::value,
+		Bit_Order,
 		typename protocol_helper::field_type<I, Tuple>::type>::get(&buf[first_byte::value]);
     }
 
@@ -356,9 +356,9 @@ namespace protocol_helper
 	typedef typename Bit_Order:: template first_byte<I, Tuple>::type first_byte;
 
 	protocol_helper::field_value<((protocol_helper::field_bit_offset<I, Tuple>::value % protocol_helper::bits_per_byte::value) + protocol_helper::field_bits<I, Tuple>::value > protocol_helper::bits_per_byte::value),
-	    Bit_Order,
 	    protocol_helper::field_bits<I, Tuple>::value,
 	    protocol_helper::field_bit_offset<I, Tuple>::value % protocol_helper::bits_per_byte::value,
+	    Bit_Order,
 	    typename protocol_helper::field_type<I, Tuple>::type>::set(&buf[first_byte::value], val);
     }
 }
