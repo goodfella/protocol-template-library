@@ -114,25 +114,14 @@ namespace protocol_helper
 	enum : size_t { value = protocol_helper::field_bit_offset<I, Tuple>::value / protocol_helper::bits_per_byte::value };
     };
 
-    /// Returns the starting bit for a fields byte mask
-    /**
-     * @tparam Field_Offset the bit offset
-     */
-    template<size_t Field_Offset>
-    struct byte_mask_start
-    {
-	enum : size_t { value = Field_Offset % protocol_helper::bits_per_byte::value };
-    };
-
     /// Returns the number of bits to read from a byte
     /**
-     *  @tparam the number of bits in the byte for the field
-     *  @tparam The field's offset into the byte
+     *  @tparam Byte_Offset The field's offset into the byte
      */
-    template<size_t Field_Offset>
+    template<size_t Byte_Offset>
     struct byte_mask_len
     {
-	enum : size_t { value = protocol_helper::bits_per_byte::value - byte_mask_start<Field_Offset>::value };
+	enum : size_t { value = protocol_helper::bits_per_byte::value - Byte_Offset };
     };
 
     /// Returns the length in bits of the protocol
@@ -203,20 +192,20 @@ namespace protocol_helper
     /// Returns the value of a field
     /**
      *   @tparam Span True if the field spans multiple bytes
-     *   @tparam Bit_Order The bit order of the field
      *   @tparam Field_Bits The remaining number of bits in a field to process
-     *   @tparam Field_Offset The number of bits prior to this field
-     *   @tparam The type used to represent the field
+     *   @tparam Byte_Offset The number of bits prior to this field
+     *   @tparam Bit_Order The bit order of the field
+     *   @tparam T The type used to represent the field
      */
-    template<bool Span, class Bit_Order, size_t Field_Bits, size_t Field_Offset, class T>
+    template<bool Span, size_t Field_Bits, size_t Byte_Offset, class Bit_Order, class T>
     struct field_value;
 
     /// Specialization for when the field does not span multiple bytes
-    template<class Bit_Order, size_t Field_Bits, size_t Field_Offset, class T>
-    struct field_value<false, Bit_Order, Field_Bits, Field_Offset, T>
+    template<size_t Field_Bits, size_t Byte_Offset, class Bit_Order, class T>
+    struct field_value<false, Field_Bits, Byte_Offset, Bit_Order, T>
     {
 	typedef typename Bit_Order:: template byte_mask<Field_Bits,
-							protocol_helper::byte_mask_start<Field_Offset>::value,
+							Byte_Offset,
 							unsigned char>::type byte_mask;
 
 	static const T get(unsigned char const * const buf) {
@@ -224,7 +213,7 @@ namespace protocol_helper
 	    // the resulting value the appropriate bits to fit in the
 	    // space made by the true specialization
 	    return (buf[0] & byte_mask::value) >>
-		(protocol_helper::bits_per_byte::value - Field_Bits - protocol_helper::byte_mask_start<Field_Offset>::value);
+		(protocol_helper::bits_per_byte::value - Field_Bits - Byte_Offset);
 	}
 
 	static const void set(unsigned char * const buf, const T value) {
@@ -238,17 +227,17 @@ namespace protocol_helper
 
 	    // Set the new value
 	    buf[0] |= ((value & value_mask::value) <<
-		       (protocol_helper::bits_per_byte::value - Field_Bits - protocol_helper::byte_mask_start<Field_Offset>::value));
+		       (protocol_helper::bits_per_byte::value - Field_Bits - Byte_Offset));
 	}
     };
 
     /// Specialization for when the field spans multiple bytes
-    template<class Bit_Order, size_t Field_Bits, size_t Field_Offset, class T>
-    struct field_value<true, Bit_Order, Field_Bits, Field_Offset, T>
+    template<size_t Field_Bits, size_t Byte_Offset, class Bit_Order, class T>
+    struct field_value<true, Field_Bits, Byte_Offset, Bit_Order, T>
     {
 	// mask type provided by the Bit_Order
-	typedef typename Bit_Order:: template byte_mask<protocol_helper::byte_mask_len<Field_Offset>::value,
-							protocol_helper::byte_mask_start<Field_Offset>::value,
+	typedef typename Bit_Order:: template byte_mask<protocol_helper::byte_mask_len<Byte_Offset>::value,
+							Byte_Offset,
 							unsigned char>::type byte_mask;
 
 	static const T get(unsigned char const * const buf) {
@@ -261,18 +250,17 @@ namespace protocol_helper
 
 	    // buf[0] & (mask to select field value in this byte) << (number of bits to fit the remaining field bits)
 	    return (static_cast<T>((buf[0] & byte_mask::value)) <<
-		    (Field_Bits - protocol_helper::byte_mask_len<Field_Offset>::value)) +
+		    (Field_Bits - protocol_helper::byte_mask_len<Byte_Offset>::value)) +
 
-		protocol_helper::field_value<(Field_Bits - protocol_helper::byte_mask_len<Field_Offset>::value > protocol_helper::bits_per_byte::value),
-		    Bit_Order,
-		    Field_Bits - protocol_helper::byte_mask_len<Field_Offset>::value,
-		    0, T>::get(next_byte::value(buf));
+		protocol_helper::field_value<(Field_Bits - protocol_helper::byte_mask_len<Byte_Offset>::value > protocol_helper::bits_per_byte::value),
+		    Field_Bits - protocol_helper::byte_mask_len<Byte_Offset>::value,
+		    0, Bit_Order, T>::get(next_byte::value(buf));
 	}
 
 	static void set(unsigned char * const buf, const T val) {
 
 	    typedef typename Bit_Order:: template next_byte<unsigned char* const>::type next_byte;
-	    typedef protocol_helper::msb_mask<protocol_helper::byte_mask_len<Field_Offset>::value,
+	    typedef protocol_helper::msb_mask<protocol_helper::byte_mask_len<Byte_Offset>::value,
 					      std::numeric_limits<T>::digits - Field_Bits,
 					      T> value_mask;
 
@@ -281,14 +269,14 @@ namespace protocol_helper
 
 	    // Set current byte
 	    buf[0] |= ((val & value_mask::value) >>
-		       (Field_Bits - protocol_helper::byte_mask_len<Field_Offset>::value));
+		       (Field_Bits - protocol_helper::byte_mask_len<Byte_Offset>::value));
 
 	    // Set next byte
 	    protocol_helper::field_value<
-		(Field_Bits - protocol_helper::byte_mask_len<Field_Offset>::value > protocol_helper::bits_per_byte::value),
-		Bit_Order,
-		Field_Bits - protocol_helper::byte_mask_len<Field_Offset>::value,
+		(Field_Bits - protocol_helper::byte_mask_len<Byte_Offset>::value > protocol_helper::bits_per_byte::value),
+		Field_Bits - protocol_helper::byte_mask_len<Byte_Offset>::value,
 		0,
+		Bit_Order,
 		T>::set(next_byte::value(buf), val);
 	}
     };
@@ -355,7 +343,7 @@ namespace protocol_helper
 		((protocol_helper::field_bit_offset<I, Tuple>::value % protocol_helper::bits_per_byte::value) + protocol_helper::field_bits<I, Tuple>::value > protocol_helper::bits_per_byte::value),
 		Bit_Order,
 		protocol_helper::field_bits<I, Tuple>::value,
-		protocol_helper::field_bit_offset<I, Tuple>::value,
+		protocol_helper::field_bit_offset<I, Tuple>::value % protocol_helper::bits_per_byte::value,
 		typename protocol_helper::field_type<I, Tuple>::type>::get(&buf[first_byte::value]);
     }
 
@@ -370,7 +358,7 @@ namespace protocol_helper
 	protocol_helper::field_value<((protocol_helper::field_bit_offset<I, Tuple>::value % protocol_helper::bits_per_byte::value) + protocol_helper::field_bits<I, Tuple>::value > protocol_helper::bits_per_byte::value),
 	    Bit_Order,
 	    protocol_helper::field_bits<I, Tuple>::value,
-	    protocol_helper::field_bit_offset<I, Tuple>::value,
+	    protocol_helper::field_bit_offset<I, Tuple>::value % protocol_helper::bits_per_byte::value,
 	    typename protocol_helper::field_type<I, Tuple>::type>::set(&buf[first_byte::value], val);
     }
 }
