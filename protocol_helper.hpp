@@ -105,10 +105,6 @@ namespace protocol_helper
      *  the protocol
      */
     template<size_t I, class Tuple>
-    struct field_start_byte;
-
-    /// Implementation of byte_offset
-    template<size_t I, class Tuple>
     struct field_start_byte
     {
 	enum : size_t { value = protocol_helper::field_bit_offset<I, Tuple>::value / protocol_helper::bits_per_byte::value };
