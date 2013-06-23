@@ -181,15 +181,14 @@ namespace protocol_helper
 
     struct lsb_first;
 
-    /// Used to specify that a protocol's fields have their own bit
-    /// order
+    /// Used to specify that a protocol's fields have their own bit order
     struct mixed_bit_order;
 
     /// Returns the value of a field
     /**
      *   @tparam Span True if the field spans multiple bytes
      *   @tparam Field_Bits The remaining number of bits in a field to process
-     *   @tparam Byte_Offset The number of bits prior to this field
+     *   @tparam Byte_Offset The field's offset into the current byte
      *   @tparam Bit_Order The bit order of the field
      *   @tparam T The type used to represent the field
      */
@@ -205,9 +204,10 @@ namespace protocol_helper
 							unsigned char>::type byte_mask;
 
 	static const T get(unsigned char const * const buf) {
-	    // Select the bits from buf with msb_mask and right shift
-	    // the resulting value the appropriate bits to fit in the
-	    // space made by the true specialization
+	    // Select the bits from buf with the bit order's byte mask
+	    // and right shift the resulting value the appropriate
+	    // bits to fit in the value in the remaining bits of the
+	    // field
 	    return (buf[0] & byte_mask::value) >>
 		(protocol_helper::bits_per_byte::value - Field_Bits - Byte_Offset);
 	}
@@ -240,11 +240,11 @@ namespace protocol_helper
 
 	    typedef typename Bit_Order:: template next_byte<unsigned char const*>::type next_byte;
 
-	    // Select the bits from buf with msb_mask and left shift
-	    // the resulting value the appropriate bits to fit the
-	    // next byte's value.  The formula below is:
+	    // Select the bits from buf with the bit order mask, and
+	    // left shift the resulting value the appropriate bits to
+	    // fit the next byte's value.  The formula below is:
 
-	    // buf[0] & (mask to select field value in this byte) << (number of bits to fit the remaining field bits)
+	    // buf[0] & (mask to select field value in this byte) << (number of remaining field bits)
 	    return (static_cast<T>((buf[0] & byte_mask::value)) <<
 		    (Field_Bits - protocol_helper::byte_mask_len<Byte_Offset>::value)) +
 
@@ -296,7 +296,7 @@ namespace protocol_helper
 	enum : size_t { field_count = std::tuple_size<Tuple>::value };
     };
 
-    /// Wrapper around a protocol tuple
+    /// Class the represents the protocol
     /**
      *  @tparam Bit_Order the protocol's bit order
      *  @tparam Tuple The tuple that represents the protocol
@@ -330,8 +330,8 @@ namespace protocol_helper
     template<size_t I>
     const typename protocol_helper::field_type<I, Tuple>::type protocol<Bit_Order, Tuple>::field_value(unsigned char const * const buf)
     {
-	/// template function that returns the first byte index for
-	/// the given bit order
+	// template function that returns the first byte index for the
+	// given bit order
 	typedef typename Bit_Order:: template first_byte<I, Tuple>::type first_byte;
 
 	return
@@ -347,8 +347,8 @@ namespace protocol_helper
     template<size_t I>
     void protocol<Bit_Order, Tuple>::field_value(unsigned char * const buf, const typename protocol_helper::field_type<I, Tuple>::type val)
     {
-	/// template function that returns the first byte index for
-	/// the given bit order
+	// template function that returns the first byte index for the
+	// given bit order
 	typedef typename Bit_Order:: template first_byte<I, Tuple>::type first_byte;
 
 	protocol_helper::field_value<((protocol_helper::field_bit_offset<I, Tuple>::value % protocol_helper::bits_per_byte::value) + protocol_helper::field_bits<I, Tuple>::value > protocol_helper::bits_per_byte::value),
