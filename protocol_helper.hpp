@@ -105,7 +105,7 @@ namespace protocol_helper
      *  the protocol
      */
     template<size_t I, class Tuple>
-    struct field_start_byte
+    struct field_first_byte
     {
 	enum : size_t { value = protocol_helper::field_bit_offset<I, Tuple>::value / protocol_helper::bits_per_byte::value };
     };
@@ -173,9 +173,9 @@ namespace protocol_helper
 
 	/// Generates the index of the first byte for the field
 	template<size_t I, class Tuple>
-	struct first_byte
+	struct start_byte
 	{
-	    typedef protocol_helper::field_start_byte<I, Tuple> type;
+	    typedef protocol_helper::field_first_byte<I, Tuple> type;
 	};
     };
 
@@ -332,7 +332,7 @@ namespace protocol_helper
     {
 	// template function that returns the first byte index for the
 	// given bit order
-	typedef typename Bit_Order:: template first_byte<I, Tuple>::type first_byte;
+	typedef typename Bit_Order:: template start_byte<I, Tuple>::type start_byte;
 
 	return
 	    protocol_helper::field_value<
@@ -340,7 +340,7 @@ namespace protocol_helper
 		protocol_helper::field_bits<I, Tuple>::value,
 		protocol_helper::field_bit_offset<I, Tuple>::value % protocol_helper::bits_per_byte::value,
 		Bit_Order,
-		typename protocol_helper::field_type<I, Tuple>::type>::get(&buf[first_byte::value]);
+		typename protocol_helper::field_type<I, Tuple>::type>::get(&buf[start_byte::value]);
     }
 
     template<class Bit_Order, class Tuple>
@@ -349,12 +349,12 @@ namespace protocol_helper
     {
 	// template function that returns the first byte index for the
 	// given bit order
-	typedef typename Bit_Order:: template first_byte<I, Tuple>::type first_byte;
+	typedef typename Bit_Order:: template start_byte<I, Tuple>::type start_byte;
 
 	protocol_helper::field_value<((protocol_helper::field_bit_offset<I, Tuple>::value % protocol_helper::bits_per_byte::value) + protocol_helper::field_bits<I, Tuple>::value > protocol_helper::bits_per_byte::value),
 	    protocol_helper::field_bits<I, Tuple>::value,
 	    protocol_helper::field_bit_offset<I, Tuple>::value % protocol_helper::bits_per_byte::value,
 	    Bit_Order,
-	    typename protocol_helper::field_type<I, Tuple>::type>::set(&buf[first_byte::value], val);
+	    typename protocol_helper::field_type<I, Tuple>::type>::set(&buf[start_byte::value], val);
     }
 }

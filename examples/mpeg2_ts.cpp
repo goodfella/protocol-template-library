@@ -29,8 +29,8 @@ int main()
     cout << field_bit_offset<4, mpeg2_ts_tpl>::value << endl;
     cout << field_bit_offset<1, mpeg2_ts_tpl>::value << endl;
     cout << field_bit_offset<0, mpeg2_ts_tpl>::value << endl;
-    cout << field_start_byte<1, mpeg2_ts_tpl>::value << endl;
-    cout << field_start_byte<0, mpeg2_ts_tpl>::value << endl;
+    cout << field_first_byte<1, mpeg2_ts_tpl>::value << endl;
+    cout << field_first_byte<0, mpeg2_ts_tpl>::value << endl;
 
     unsigned char b[3];
     
