@@ -62,6 +62,19 @@ namespace protocol_helper
 	enum : size_t { value = std::tuple_element<I, Tuple>::type::bits };
     };
 
+    /// Returns the number of bytes required for the field
+    /**
+     *  @tparam I Order number of the element within the protocol tuple
+     *  @tparam Tuple The Tuple that represents the protocol
+     */
+    template <size_t I, class Tuple>
+    struct field_bytes
+    {
+	enum : size_t { value = (protocol_helper::field_bits<I, Tuple>::value +
+				 protocol_helper::bits_per_byte) /
+			protocol_helper::bits_per_byte };
+    };
+
     /// Provides a typedef for a fields type
     /**
      *  @tparam I Order number of the element within the tuple
@@ -108,6 +121,18 @@ namespace protocol_helper
     struct field_first_byte
     {
 	enum : size_t { value = protocol_helper::field_bit_offset<I, Tuple>::value / protocol_helper::bits_per_byte::value };
+    };
+
+    /// Returns the last byte index of a field
+    /**
+     *  @tparam I Order number of the element within the tuple
+     *  @tparam Tuple The tuple the represents the protocol
+     */
+    template <size_t I, class Tuple>
+    struct field_last_byte
+    {
+	enum : size_t { value = (protocol_helper::field_bit_offset<I, Tuple>::value +
+				 protocol_helper::field_bits<I, Tuple>::value - 1) / protocol_helper::bits_per_byte::value };
     };
 
     /// Returns the number of bits to read from a byte
