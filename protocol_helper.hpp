@@ -71,8 +71,8 @@ namespace protocol_helper
     struct field_bytes
     {
 	enum : size_t { value = (protocol_helper::field_bits<I, Tuple>::value +
-				 protocol_helper::bits_per_byte) /
-			protocol_helper::bits_per_byte };
+				 protocol_helper::bits_per_byte::value) /
+			protocol_helper::bits_per_byte::value };
     };
 
     /// Provides a typedef for a fields type
