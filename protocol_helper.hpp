@@ -179,7 +179,7 @@ namespace protocol_helper
 	enum: T { value = 0 };
     };
 
-    /// Definitions needed for most significant bit first protocols / fields
+    /// Definitions needed for most significant byte first protocols / fields
     struct msb_first
     {
 	/// Returns the field's next byte in a unsigned char protocol buffer
@@ -206,25 +206,25 @@ namespace protocol_helper
 
     struct lsb_first;
 
-    /// Used to specify that a protocol's fields have their own bit order
-    struct mixed_bit_order;
+    /// Used to specify that a protocol's fields have their own byte order
+    struct mixed_byte_order;
 
     /// Returns the value of a field
     /**
      *   @tparam Span True if the field spans multiple bytes
      *   @tparam Field_Bits The remaining number of bits in a field to process
      *   @tparam Byte_Offset The field's offset into the current byte
-     *   @tparam Bit_Order The bit order of the field
+     *   @tparam Byte_Order The bit order of the field
      *   @tparam T The type used to represent the field
      */
-    template<bool Span, size_t Field_Bits, size_t Byte_Offset, class Bit_Order, class T>
+    template<bool Span, size_t Field_Bits, size_t Byte_Offset, class Byte_Order, class T>
     struct field_value;
 
     /// Specialization for when the field does not span multiple bytes
-    template<size_t Field_Bits, size_t Byte_Offset, class Bit_Order, class T>
-    struct field_value<false, Field_Bits, Byte_Offset, Bit_Order, T>
+    template<size_t Field_Bits, size_t Byte_Offset, class Byte_Order, class T>
+    struct field_value<false, Field_Bits, Byte_Offset, Byte_Order, T>
     {
-	typedef typename Bit_Order:: template byte_mask<Field_Bits,
+	typedef typename Byte_Order:: template byte_mask<Field_Bits,
 							Byte_Offset,
 							unsigned char>::type byte_mask;
 
@@ -253,17 +253,17 @@ namespace protocol_helper
     };
 
     /// Specialization for when the field spans multiple bytes
-    template<size_t Field_Bits, size_t Byte_Offset, class Bit_Order, class T>
-    struct field_value<true, Field_Bits, Byte_Offset, Bit_Order, T>
+    template<size_t Field_Bits, size_t Byte_Offset, class Byte_Order, class T>
+    struct field_value<true, Field_Bits, Byte_Offset, Byte_Order, T>
     {
-	// mask type provided by the Bit_Order
-	typedef typename Bit_Order:: template byte_mask<protocol_helper::byte_mask_len<Byte_Offset>::value,
+	// mask type provided by the Byte_Order
+	typedef typename Byte_Order:: template byte_mask<protocol_helper::byte_mask_len<Byte_Offset>::value,
 							Byte_Offset,
 							unsigned char>::type byte_mask;
 
 	static const T get(unsigned char const * const buf) {
 
-	    typedef typename Bit_Order:: template next_byte<unsigned char const*>::type next_byte;
+	    typedef typename Byte_Order:: template next_byte<unsigned char const*>::type next_byte;
 
 	    // Select the bits from buf with the bit order mask, and
 	    // left shift the resulting value the appropriate bits to
@@ -275,12 +275,12 @@ namespace protocol_helper
 
 		protocol_helper::field_value<(Field_Bits - protocol_helper::byte_mask_len<Byte_Offset>::value > protocol_helper::bits_per_byte::value),
 		    Field_Bits - protocol_helper::byte_mask_len<Byte_Offset>::value,
-		    0, Bit_Order, T>::get(next_byte::value(buf));
+		    0, Byte_Order, T>::get(next_byte::value(buf));
 	}
 
 	static void set(unsigned char * const buf, const T val) {
 
-	    typedef typename Bit_Order:: template next_byte<unsigned char* const>::type next_byte;
+	    typedef typename Byte_Order:: template next_byte<unsigned char* const>::type next_byte;
 	    typedef protocol_helper::msb_mask<protocol_helper::byte_mask_len<Byte_Offset>::value,
 					      std::numeric_limits<T>::digits - Field_Bits,
 					      T> value_mask;
@@ -297,7 +297,7 @@ namespace protocol_helper
 		(Field_Bits - protocol_helper::byte_mask_len<Byte_Offset>::value > protocol_helper::bits_per_byte::value),
 		Field_Bits - protocol_helper::byte_mask_len<Byte_Offset>::value,
 		0,
-		Bit_Order,
+		Byte_Order,
 		T>::set(next_byte::value(buf), val);
 	}
     };
@@ -323,15 +323,15 @@ namespace protocol_helper
 
     /// Class the represents the protocol
     /**
-     *  @tparam Bit_Order the protocol's bit order
+     *  @tparam Byte_Order the protocol's bit order
      *  @tparam Tuple The tuple that represents the protocol
      */
-    template<class Bit_Order, class Tuple>
+    template<class Byte_Order, class Tuple>
     class protocol: public protocol_base<Tuple>
     {
 	public:
 
-	typedef Bit_Order bit_order;
+	typedef Byte_Order byte_order;
 
 	/// Accessor for a protocol field given a protocol buffer
 	/**
@@ -351,35 +351,35 @@ namespace protocol_helper
 	static void field_value(unsigned char * const buf, const typename protocol_helper::field_type<I, Tuple>::type value);
     };
 
-    template<class Bit_Order, class Tuple>
+    template<class Byte_Order, class Tuple>
     template<size_t I>
-    const typename protocol_helper::field_type<I, Tuple>::type protocol<Bit_Order, Tuple>::field_value(unsigned char const * const buf)
+    const typename protocol_helper::field_type<I, Tuple>::type protocol<Byte_Order, Tuple>::field_value(unsigned char const * const buf)
     {
 	// template function that returns the first byte index for the
 	// given bit order
-	typedef typename Bit_Order:: template start_byte<I, Tuple>::type start_byte;
+	typedef typename Byte_Order:: template start_byte<I, Tuple>::type start_byte;
 
 	return
 	    protocol_helper::field_value<
 		((protocol_helper::field_bit_offset<I, Tuple>::value % protocol_helper::bits_per_byte::value) + protocol_helper::field_bits<I, Tuple>::value > protocol_helper::bits_per_byte::value),
 		protocol_helper::field_bits<I, Tuple>::value,
 		protocol_helper::field_bit_offset<I, Tuple>::value % protocol_helper::bits_per_byte::value,
-		Bit_Order,
+		Byte_Order,
 		typename protocol_helper::field_type<I, Tuple>::type>::get(&buf[start_byte::value]);
     }
 
-    template<class Bit_Order, class Tuple>
+    template<class Byte_Order, class Tuple>
     template<size_t I>
-    void protocol<Bit_Order, Tuple>::field_value(unsigned char * const buf, const typename protocol_helper::field_type<I, Tuple>::type val)
+    void protocol<Byte_Order, Tuple>::field_value(unsigned char * const buf, const typename protocol_helper::field_type<I, Tuple>::type val)
     {
 	// template function that returns the first byte index for the
 	// given bit order
-	typedef typename Bit_Order:: template start_byte<I, Tuple>::type start_byte;
+	typedef typename Byte_Order:: template start_byte<I, Tuple>::type start_byte;
 
 	protocol_helper::field_value<((protocol_helper::field_bit_offset<I, Tuple>::value % protocol_helper::bits_per_byte::value) + protocol_helper::field_bits<I, Tuple>::value > protocol_helper::bits_per_byte::value),
 	    protocol_helper::field_bits<I, Tuple>::value,
 	    protocol_helper::field_bit_offset<I, Tuple>::value % protocol_helper::bits_per_byte::value,
-	    Bit_Order,
+	    Byte_Order,
 	    typename protocol_helper::field_type<I, Tuple>::type>::set(&buf[start_byte::value], val);
     }
 }

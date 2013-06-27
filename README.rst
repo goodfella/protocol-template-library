@@ -23,30 +23,30 @@ Defining Protocols
 
 Protocols in this library are defined by two attributes:
 
-* Bit order
+* Byte order
 * Field list
 
-Protocol bit order
+Protocol byte order
 ~~~~~~~~~~~~~~~~~~
 
-A protocol's bit order defines the order in which its field's bits are
-stored in a unsigned char buffer that represents the protocol's field
-data.  There are three bit field types that can be assigned to a
-protocol:
+A protocol's byte order defines the order in which its field's bytes
+are stored in a unsigned char buffer that represents the protocol's
+field data.  There are three byte order types that can be assigned to
+a protocol:
 
-* Most significant bit first
-* Least significant bit first
+* Most significant byte first
+* Least significant byte first
 * Mixed bit order
 
-In a most significant bit first protocol, a field's bits are stored
+In a most significant byte first protocol, a field's bytes are stored
 from most significant to least significant.
 
-In a least significant protocol, a field's bits are stored from least
-significant to most significant.
+In a least significant byte protocol, a field's bytes are stored from
+least significant to most significant.
 
-In a mixed bit order protocol, each field defines its own bit order.
-In this case each field's bit order can be either most significant bit
-first, or least significant bit first as described above.
+In a mixed byte order protocol, each field defines its own byte order.
+In this case each field's byte order can be either most significant
+byte first, or least significant byte first as described above.
 
 Protocol field list
 ~~~~~~~~~~~~~~~~~~~
