@@ -18,6 +18,14 @@ the build tree::
  cmake ..
  make
 
+Usage Restrictions
+~~~~~~~~~~~~~~~~~~
+
+The protocol-helper library requires that unsigned char be 8 bits in
+length.  This is because the byte order handling works on 8 bit sized
+unsigned chars.  Also, networking between machines whose bit sizes of
+an unsigned char differ is beyond the scope of this library.
+
 Defining Protocols
 ==================
 
