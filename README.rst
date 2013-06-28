@@ -51,7 +51,7 @@ Protocols in this library are defined by two attributes:
 * Field list
 
 Protocol byte order
-~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~
 
 A protocol's byte order defines the order in which its field's bytes
 are stored in a unsigned char buffer that represents the protocol's
@@ -65,8 +65,8 @@ a protocol:
 In a most significant byte first protocol, a field's bytes are stored
 from most significant to least significant.
 
-In a least significant byte protocol, a field's bytes are stored from
-least significant to most significant.
+In a least significant byte first protocol, a field's bytes are stored
+from least significant to most significant.
 
 In a mixed byte order protocol, each field defines its own byte order.
 In this case each field's byte order can be either most significant
