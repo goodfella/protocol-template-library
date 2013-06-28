@@ -21,10 +21,26 @@ the build tree::
 Usage Restrictions
 ~~~~~~~~~~~~~~~~~~
 
-The protocol-helper library requires that unsigned char be 8 bits in
-length.  This is because the byte order handling works on 8 bit sized
-unsigned chars.  Also, networking between machines whose bit sizes of
-an unsigned char differ is beyond the scope of this library.
+The current byte order handling of fields requires that the sender and
+receiver of the packed data agree on the number of bits per unsigned
+char.  This is because the number of bits per unsigned char dictates
+the field size at which the byte order of a field needs to be handled.
+For example, there's no need to handle the byte order for a 16 bit
+field on a system where an unsigned char is 16 bits.  On that system,
+a 16 bit integer can be transfered without any byte swaping because
+only one byte is required to send the integer.
+
+If that 16 bit field was then transmited from a system with a byte
+that's 16 bits to a system where a byte is 8 bits, the receiving
+system would not know how to interpret the two bytes that make up the
+16 bit field because the system from which the field data originated
+sent the data in its native endianess.
+
+A similar problem exists when the source system has less bits per
+unsigned char than the destination system.  In this scenario, the
+destination system is not able to undo the byte swapping performed by
+the source system because it's unable to address the first and last 8
+bits of the field.
 
 Defining Protocols
 ==================

@@ -4,13 +4,6 @@
 
 namespace protocol_helper
 {
-    /**
-     * Byte_Order handling does not work when unsigned char is not 8
-     * bits.  Also, networking between machines with differing char
-     * sizes is beyond the scope of this library.
-     */
-    static_assert(std::numeric_limits<unsigned char>::digits == 8, "protocol-helper requires 8 bit chars");
-
     /// Returns the number of bits per byte
     struct bits_per_byte
     {
