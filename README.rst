@@ -60,7 +60,7 @@ a protocol:
 
 * Most significant byte first
 * Least significant byte first
-* Mixed bit order
+* Mixed byte order
 
 In a most significant byte first protocol, a field's bytes are stored
 from most significant to least significant.
