@@ -185,6 +185,27 @@ namespace protocol_helper
 	enum: T { value = 0 };
     };
 
+    /// Returns the mask necessary to select bits starting from the least significant bit
+    /**
+     *  @tparam Bits The number of bits to select
+     *
+     *  @tparam Start Starting least significant bit (0 based)
+     *
+     *  @tparam T The type of value
+     */
+    template<size_t Bits, size_t Start, class T>
+    struct lsb_mask
+    {
+	enum : T { value = (static_cast<T>(1) << (Bits - 1 + Start)) + lsb_mask<Bits - 1, Start, T>::value };
+    };
+
+    /// Base implementation of msb_mask
+    template<size_t Start, class T>
+    struct lsb_mask<0, Start, T>
+    {
+	enum : T { value = 0 };
+    };
+
     /// Definitions needed for most significant byte first protocols / fields
     struct msb_first
     {
@@ -203,7 +224,54 @@ namespace protocol_helper
 	};
     };
 
-    struct lsb_first;
+    struct lsb_first
+    {
+	/// Returns the field's next byte in a unsigned char protocol buffer
+	template<class T>
+	struct next_byte
+	{
+	    typedef protocol_helper::decrement<T> type;
+	};
+
+	/// Generates the mask for a field's byte
+	template<size_t Bits, size_t Start, class T>
+	struct byte_mask
+	{
+	    typedef protocol_helper::lsb_mask<Bits, Start, T> type;
+	};
+
+	/// Generates the index of the first byte for the field
+	template<size_t I, class Tuple>
+	struct start_byte
+	{
+	    typedef protocol_helper::field_last_byte<I, Tuple> type;
+	};
+
+	/// Generates the offset into the starting byte where the field exists
+	template<size_t I, class Tuple>
+	struct start_byte_offset
+	{
+	    enum : size_t
+	    {
+		value = (protocol_helper::bits_per_byte::value -
+			 ((protocol_helper::field_bit_offset<I, Tuple>::value +
+			   protocol_helper::field_bits<I, Tuple>::value) % protocol_helper::bits_per_byte::value)) %
+		protocol_helper::bits_per_byte::value
+	    };
+	};
+
+	/// Generates the amount to shift the value
+	template<size_t Field_Size, size_t Offset>
+	struct value_shift
+	{
+	    enum : size_t
+	    {
+		value = Field_Size + Offset > protocol_helper::bits_per_byte::value ?
+		Field_Size - protocol_helper::bits_per_byte::value :
+		Offset
+	    };
+	};
+    };
 
     /// Used to specify that a protocol's fields have their own byte order
     struct mixed_byte_order;
