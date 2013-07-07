@@ -48,6 +48,9 @@ namespace protocol_helper
     template<size_t Bits, typename T>
     struct field: unsigned_type_constraint<(!std::numeric_limits<T>::is_signed)>
     {
+	static_assert(static_cast<size_t>(std::numeric_limits<T>::digits) >= Bits,
+		      "The number of bits in a field's type must be greater than or equal to the number of bits in the field");
+
 	typedef T type;
 	enum : size_t { bits = Bits };
     };
