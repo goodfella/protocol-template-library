@@ -195,13 +195,6 @@ namespace protocol_helper
 	    typedef protocol_helper::increment<T> type;
 	};
 
-	/// Generates the mask for a field's byte
-	template<size_t Bits, size_t Start, class T>
-	struct byte_mask
-	{
-	    typedef protocol_helper::msb_mask<Bits, Start, T> type;
-	};
-
 	/// Generates the index of the first byte for the field
 	template<size_t I, class Tuple>
 	struct start_byte
@@ -230,17 +223,24 @@ namespace protocol_helper
     template<size_t Field_Bits, size_t Byte_Offset, class Byte_Order, class T>
     struct field_value<false, Field_Bits, Byte_Offset, Byte_Order, T>
     {
-	typedef typename Byte_Order:: template byte_mask<Field_Bits,
-							Byte_Offset,
-							unsigned char>::type byte_mask;
+	typedef protocol_helper::msb_mask<Field_Bits,
+					  Byte_Offset,
+					  unsigned char> byte_mask;
+
+	struct value_shift
+	{
+	    enum : size_t
+	    {
+	        value = protocol_helper::bits_per_byte::value - Field_Bits - Byte_Offset
+	    };
+	};
 
 	static const T get(unsigned char const * const buf) {
 	    // Select the bits from buf with the bit order's byte mask
 	    // and right shift the resulting value the appropriate
 	    // bits to fit in the value in the remaining bits of the
 	    // field
-	    return (buf[0] & byte_mask::value) >>
-		(protocol_helper::bits_per_byte::value - Field_Bits - Byte_Offset);
+	    return (buf[0] & byte_mask::value) >> value_shift::value;
 	}
 
 	static const void set(unsigned char * const buf, const T value) {
@@ -253,8 +253,7 @@ namespace protocol_helper
 	    buf[0] &= static_cast<unsigned char>(~byte_mask::value);
 
 	    // Set the new value
-	    buf[0] |= ((value & value_mask::value) <<
-		       (protocol_helper::bits_per_byte::value - Field_Bits - Byte_Offset));
+	    buf[0] |= ((value & value_mask::value) << value_shift::value);
 	}
     };
 
@@ -262,10 +261,17 @@ namespace protocol_helper
     template<size_t Field_Bits, size_t Byte_Offset, class Byte_Order, class T>
     struct field_value<true, Field_Bits, Byte_Offset, Byte_Order, T>
     {
-	// mask type provided by the Byte_Order
-	typedef typename Byte_Order:: template byte_mask<protocol_helper::byte_mask_len<Byte_Offset>::value,
-							Byte_Offset,
-							unsigned char>::type byte_mask;
+        typedef protocol_helper::msb_mask<protocol_helper::byte_mask_len<Byte_Offset>::value,
+					  Byte_Offset,
+					  unsigned char> byte_mask;
+
+	struct value_shift
+	{
+	    enum : size_t
+	    {
+	        value = Field_Bits - (protocol_helper::bits_per_byte::value - Byte_Offset)
+	    };
+	};
 
 	static const T get(unsigned char const * const buf) {
 
@@ -276,8 +282,7 @@ namespace protocol_helper
 	    // fit the next byte's value.  The formula below is:
 
 	    // buf[0] & (mask to select field value in this byte) << (number of remaining field bits)
-	    return (static_cast<T>((buf[0] & byte_mask::value)) <<
-		    (Field_Bits - protocol_helper::byte_mask_len<Byte_Offset>::value)) +
+	    return (static_cast<T>((buf[0] & byte_mask::value)) << value_shift::value) +
 
 		protocol_helper::field_value<(Field_Bits - protocol_helper::byte_mask_len<Byte_Offset>::value > protocol_helper::bits_per_byte::value),
 		    Field_Bits - protocol_helper::byte_mask_len<Byte_Offset>::value,
@@ -295,8 +300,7 @@ namespace protocol_helper
 	    buf[0] &= static_cast<unsigned char>(~byte_mask::value);
 
 	    // Set current byte
-	    buf[0] |= ((val & value_mask::value) >>
-		       (Field_Bits - protocol_helper::byte_mask_len<Byte_Offset>::value));
+	    buf[0] |= ((val & value_mask::value) >> value_shift::value);
 
 	    // Set next byte
 	    protocol_helper::field_value<
