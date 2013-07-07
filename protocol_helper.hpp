@@ -10,18 +10,6 @@ namespace protocol_helper
 	enum : size_t { value = static_cast<size_t>(std::numeric_limits<unsigned char>::digits) };
     };
 
-    /// Constrains fields to be unsigned
-    template<bool Signed>
-    struct unsigned_type_constraint;
-
-    /// Accept only unsigned types
-    /**
-     *  Right shifting of signed types has implementation defined
-     *  behavior, and that's not portable.
-     */
-    template<>
-    struct unsigned_type_constraint<true> {};
-
     /// Increments an object by one
     template<class T>
     struct increment
@@ -46,8 +34,10 @@ namespace protocol_helper
      *  @tparam T Type used to represent the field
      */
     template<size_t Bits, typename T>
-    struct field: unsigned_type_constraint<(!std::numeric_limits<T>::is_signed)>
+    struct field
     {
+	static_assert(!std::numeric_limits<T>::is_signed,
+		      "A field's type must be unsigned");
 	static_assert(static_cast<size_t>(std::numeric_limits<T>::digits) >= Bits,
 		      "The number of bits in a field's type must be greater than or equal to the number of bits in the field");
 
