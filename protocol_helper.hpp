@@ -129,6 +129,18 @@ namespace protocol_helper
 				 protocol_helper::field_bits<I, Tuple>::value - 1) / protocol_helper::bits_per_byte::value };
     };
 
+    /// Returns whether the field spans multiple bytes
+    /**
+     * @tparam I Order number of the element within the tuple
+     * @tparam Tuple The tuple that represents the protocol
+     */
+    template <size_t I, class Tuple>
+    struct field_spans_bytes
+    {
+       enum : bool { value = ((protocol_helper::field_bit_offset<I, Tuple>::value % protocol_helper::bits_per_byte::value) +
+                              protocol_helper::field_bits<I, Tuple>::value) > protocol_helper::bits_per_byte::value };
+    };
+
     /// Returns the number of bits to read from a byte
     /**
      *  @tparam Byte_Offset The field's offset into the byte
@@ -355,7 +367,7 @@ namespace protocol_helper
 
 	return
 	    protocol_helper::field_value<
-		((protocol_helper::field_bit_offset<I, Tuple>::value % protocol_helper::bits_per_byte::value) + protocol_helper::field_bits<I, Tuple>::value > protocol_helper::bits_per_byte::value),
+		protocol_helper::field_spans_bytes<I, Tuple>::value,
 		protocol_helper::field_bits<I, Tuple>::value,
 		protocol_helper::field_bit_offset<I, Tuple>::value % protocol_helper::bits_per_byte::value,
 		Byte_Order,
@@ -370,7 +382,8 @@ namespace protocol_helper
 	// given bit order
 	typedef typename Byte_Order:: template start_byte<I, Tuple>::type start_byte;
 
-	protocol_helper::field_value<((protocol_helper::field_bit_offset<I, Tuple>::value % protocol_helper::bits_per_byte::value) + protocol_helper::field_bits<I, Tuple>::value > protocol_helper::bits_per_byte::value),
+	protocol_helper::field_value<
+	    protocol_helper::field_spans_bytes<I, Tuple>::value,
 	    protocol_helper::field_bits<I, Tuple>::value,
 	    protocol_helper::field_bit_offset<I, Tuple>::value % protocol_helper::bits_per_byte::value,
 	    Byte_Order,
