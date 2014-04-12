@@ -25,16 +25,16 @@ typedef tuple<
     field<9, uint16_t>  // field 10
     > test;
 
-typedef protocol<msb_first, test> test_proto;
+typedef protocol<test> test_proto;
 
 template<size_t Bit, size_t Field, class Protocol>
 struct test_field_bit
 {
     static void test(unsigned char * const buf)
     {
-	typedef typename field_type<Field, typename Protocol::tuple>::type ftype;
+	typedef typename field_type<Field, typename Protocol::tuple_type>::type ftype;
 
-	ftype val = msb_mask<1, numeric_limits<ftype>::digits - field_bits<Field, typename Protocol::tuple>::value + Bit, ftype>::value;
+	ftype val = msb_mask<1, numeric_limits<ftype>::digits - field_bits<Field, typename Protocol::tuple_type>::value + Bit, ftype>::value;
 
 	test_proto::field_value<Field>(buf, val);
 
@@ -57,9 +57,9 @@ struct test_field_bit<0, Field, Protocol>
 {
     static void test(unsigned char * const buf)
     {
-	typedef typename field_type<Field, typename Protocol::tuple>::type ftype;
+	typedef typename field_type<Field, typename Protocol::tuple_type>::type ftype;
 
-	ftype val = msb_mask<1, numeric_limits<ftype>::digits - field_bits<Field, typename Protocol::tuple>::value, ftype>::value;
+	ftype val = msb_mask<1, numeric_limits<ftype>::digits - field_bits<Field, typename Protocol::tuple_type>::value, ftype>::value;
 
 	test_proto::field_value<Field>(buf, val);
 
@@ -82,7 +82,7 @@ struct test_field
 {
     static void test(unsigned char * const buf)
     {
-	test_field_bit<field_bits<Field, typename Protocol::tuple>::value - 1, Field, Protocol>::test(buf);
+	test_field_bit<field_bits<Field, typename Protocol::tuple_type>::value - 1, Field, Protocol>::test(buf);
 	test_field<Field - 1, Protocol>::test(buf);
     }
 };
@@ -92,7 +92,7 @@ struct test_field<0, Protocol>
 {
     static void test(unsigned char * const buf)
     {
-	test_field_bit<field_bits<0, typename Protocol::tuple>::value - 1, 0, Protocol>::test(buf);
+	test_field_bit<field_bits<0, typename Protocol::tuple_type>::value - 1, 0, Protocol>::test(buf);
     }
 };
 
@@ -106,7 +106,7 @@ template <size_t Bit, size_t Field_Offset, size_t Field_Size, class Type>
 struct test_bit
 {
     static void test(unsigned char * const buf) {
-	typedef field_value<((Field_Offset % bits_per_byte::value) + Field_Size > bits_per_byte::value), Field_Size, Field_Offset, msb_first, Type> fv_type;
+	typedef field_value<((Field_Offset % bits_per_byte::value) + Field_Size > bits_per_byte::value), Field_Size, Field_Offset, Type> fv_type;
 	Type val = msb_mask<1, numeric_limits<Type>::digits - Field_Size + Bit, Type>::value;
 
 	fv_type::set(buf, val);
@@ -131,7 +131,7 @@ template <size_t Field_Offset, size_t Field_Size, class Type>
 struct test_bit<0, Field_Offset, Field_Size, Type>
 {
     static void test(unsigned char * const buf) {
-	typedef field_value<((Field_Offset % bits_per_byte::value) + Field_Size > bits_per_byte::value), Field_Size, Field_Offset, msb_first, Type> fv_type;
+	typedef field_value<((Field_Offset % bits_per_byte::value) + Field_Size > bits_per_byte::value), Field_Size, Field_Offset, Type> fv_type;
 	Type val = msb_mask<1, numeric_limits<Type>::digits - Field_Size, Type>::value;
 
 	fv_type::set(buf, val);
@@ -266,6 +266,7 @@ int main()
 	test_bit<0, 0, numeric_limits<uint64_t>::digits, uint64_t>::test(buf);
 
 	test_protocol<test_proto>(buf);
+	cout << test_proto::byte_count << endl;
     }
     catch(exception& ex)
     {
