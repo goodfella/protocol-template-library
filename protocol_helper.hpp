@@ -1,21 +1,30 @@
 #include <cstring>
 #include <tuple>
 #include <limits>
+#include <array>
 
 namespace protocol_helper
 {
-	/// Returns the number of bits per byte
-	struct bits_per_byte
+	template <bool, class T, class F>
+	struct condition
 	{
-		static const size_t value = static_cast<size_t>(std::numeric_limits<unsigned char>::digits);
+		typedef T type;
 	};
+
+	template <class T, class F>
+	struct condition<false, T, F>
+	{
+		typedef F type;
+	};
+
+	static const size_t bits_per_byte = static_cast<size_t>(std::numeric_limits<unsigned char>::digits);
 
 	// Returns the number of bytes required to store the provided bits
 	template <size_t Bits>
 	struct required_bytes
 	{
-		static const size_t value = (Bits / protocol_helper::bits_per_byte::value) +
-			((Bits % protocol_helper::bits_per_byte::value) == 0 ? 0 : 1);
+		static const size_t value = (Bits / protocol_helper::bits_per_byte) +
+			((Bits % protocol_helper::bits_per_byte) == 0 ? 0 : 1);
 	};
 
 	/// Returns the mask necessary to select bits starting from the most significant bit
@@ -67,13 +76,28 @@ namespace protocol_helper
 	template<size_t Byte_Offset>
 	struct byte_mask_len
 	{
-		static const size_t value = protocol_helper::bits_per_byte::value - Byte_Offset;
+		static const size_t value = protocol_helper::bits_per_byte - Byte_Offset;
 	};
 
+	/// Returns whether or not Bits + Offset spans multiple bytes
+	/**
+	 *  @tparam Bits The number of bits
+	 *  @tparam Offset The offset
+	 */
 	template <size_t Bits, size_t Offset>
 	struct spans_bytes
 	{
-		static const bool value = (Bits - protocol_helper::byte_mask_len<Offset>::value) > protocol_helper::bits_per_byte::value;
+		static const bool value = Bits + (Offset % protocol_helper::bits_per_byte) > protocol_helper::bits_per_byte;
+	};
+
+	/// Provides the offset into a byte
+	/**
+	 *  @tparam Bit_Offset The number of bits
+	 */
+	template <size_t Bit_Offset>
+	struct byte_offset
+	{
+		static const size_t value = Bit_Offset % protocol_helper::bits_per_byte;
 	};
 
 	/// Represents a field in a binary protocol
@@ -84,13 +108,18 @@ namespace protocol_helper
 	template<size_t Bits, typename T>
 	struct field
 	{
+		static_assert(Bits > 0,
+			      "The number of bits must be greater than 0");
 		static_assert(!std::numeric_limits<T>::is_signed,
 			      "A field's type must be unsigned");
 		static_assert(static_cast<size_t>(std::numeric_limits<T>::digits) >= Bits,
 			      "The number of bits in a field's type must be greater than or equal to the number of bits in the field");
 
-		typedef T type;
+		typedef T value_type;
 		static const size_t bits = Bits;
+
+		/// Number of bytes required to store the field's value
+		static const size_t bytes = protocol_helper::required_bytes<bits>::value;
 	};
 
 	/// Returns the number of bits in a field
@@ -104,17 +133,6 @@ namespace protocol_helper
 		static const size_t value = std::tuple_element<I, Tuple>::type::bits;
 	};
 
-	/// Returns the number of bytes required for the field
-	/**
-	 *  @tparam I Order number of the element within the protocol tuple
-	 *  @tparam Tuple The Tuple that represents the protocol
-	 */
-	template <size_t I, class Tuple>
-	struct field_bytes
-	{
-		static const size_t value = protocol_helper::required_bytes<protocol_helper::field_bits<I, Tuple>::value>::value;
-	};
-
 	/// Provides a typedef for a fields type
 	/**
 	 *  @tparam I Order number of the element within the tuple
@@ -123,7 +141,7 @@ namespace protocol_helper
 	template<size_t I, class Tuple>
 	struct field_type
 	{
-		typedef typename std::tuple_element<I, Tuple>::type::type type;
+		typedef typename std::tuple_element<I, Tuple>::type::value_type type;
 	};
 
 	/// Returns the bit offset of a field element within a tuple
@@ -151,7 +169,7 @@ namespace protocol_helper
 		static const size_t value = 0;
 	};
 
-	/// Returns the byte offset of a field element in a tuple
+	/// Returns the byte index of a field element in a tuple
 	/**
 	 *  @tparam I Order number of the element within the tuple
 	 *
@@ -161,7 +179,7 @@ namespace protocol_helper
 	template<size_t I, class Tuple>
 	struct field_first_byte
 	{
-		static const size_t value = protocol_helper::field_bit_offset<I, Tuple>::value / protocol_helper::bits_per_byte::value;
+		static const size_t value = protocol_helper::field_bit_offset<I, Tuple>::value / protocol_helper::bits_per_byte;
 	};
 
 	/// Returns the last byte index of a field
@@ -173,7 +191,7 @@ namespace protocol_helper
 	struct field_last_byte
 	{
 		static const size_t value = (protocol_helper::field_bit_offset<I, Tuple>::value +
-					     protocol_helper::field_bits<I, Tuple>::value - 1) / protocol_helper::bits_per_byte::value;
+					     protocol_helper::field_bits<I, Tuple>::value - 1) / protocol_helper::bits_per_byte;
 	};
 
 	/// Returns whether the field spans multiple bytes
@@ -184,8 +202,8 @@ namespace protocol_helper
 	template <size_t I, class Tuple>
 	struct field_spans_bytes
 	{
-		static const size_t value = ((protocol_helper::field_bit_offset<I, Tuple>::value % protocol_helper::bits_per_byte::value) +
-					     protocol_helper::field_bits<I, Tuple>::value) > protocol_helper::bits_per_byte::value;
+		static const size_t value = ((protocol_helper::field_bit_offset<I, Tuple>::value % protocol_helper::bits_per_byte) +
+					     protocol_helper::field_bits<I, Tuple>::value) > protocol_helper::bits_per_byte;
 	};
 
 	/// Returns the length in bits of the protocol
@@ -201,35 +219,22 @@ namespace protocol_helper
 			protocol_helper::field_bits<std::tuple_size<Tuple>::value - 1, Tuple>::value;
 	};
 
-	/// Returns the value of a field
-	/**
-	 *   @tparam Span True if the field spans multiple bytes
-	 *   @tparam Field_Bits The remaining number of bits in a field to process
-	 *   @tparam Byte_Offset The field's offset into the current byte
-	 *   @tparam T The type used to represent the field
-	 */
-	template<bool Span, size_t Field_Bits, size_t Byte_Offset, class T>
-	struct field_value;
-
 	/// Specialization for when the field does not span multiple bytes
 	template<size_t Field_Bits, size_t Byte_Offset, class T>
-	struct field_value<false, Field_Bits, Byte_Offset, T>
+	struct terminal_field_value
 	{
 		typedef protocol_helper::msb_mask<Field_Bits,
 						  Byte_Offset,
 						  unsigned char> byte_mask;
 
-		struct value_shift
-		{
-			static const size_t value = protocol_helper::bits_per_byte::value - Field_Bits - Byte_Offset;
-		};
+		static const size_t value_shift = protocol_helper::bits_per_byte - Field_Bits - Byte_Offset;
 
 		static const T get(unsigned char const * const buf) {
 			// Select the bits from buf with the byte order's byte
 			// mask and right shift the resulting value the
 			// appropriate bits to fit in the value in the remaining
 			// bits of the field
-			return (buf[0] & byte_mask::value) >> value_shift::value;
+			return (buf[0] & byte_mask::value) >> value_shift;
 		}
 
 		static const void set(unsigned char * const buf, const T value) {
@@ -242,22 +247,26 @@ namespace protocol_helper
 			buf[0] &= static_cast<unsigned char>(~byte_mask::value);
 
 			// Set the new value
-			buf[0] |= ((value & value_mask::value) << value_shift::value);
+			buf[0] |= ((value & value_mask::value) << value_shift);
 		}
 	};
 
-	/// Specialization for when the field spans multiple bytes
+	/// Sets and returns the value of a field
+	/**
+	 *   @tparam Field_Bits The remaining number of bits in a field to process
+	 *   @tparam Byte_Offset The field's offset into the current byte
+	 *   @tparam T The type used to represent the field
+	 */
 	template<size_t Field_Bits, size_t Byte_Offset, class T>
-	struct field_value<true, Field_Bits, Byte_Offset, T>
+	struct recursive_field_value
 	{
 		typedef protocol_helper::msb_mask<protocol_helper::byte_mask_len<Byte_Offset>::value,
 						  Byte_Offset,
 						  unsigned char> byte_mask;
 
-		struct value_shift
-		{
-			static const size_t value = Field_Bits - (protocol_helper::bits_per_byte::value - Byte_Offset);
-		};
+		static const size_t value_shift = Field_Bits - (protocol_helper::bits_per_byte - Byte_Offset);
+		static const size_t next_bit_count = Field_Bits - protocol_helper::byte_mask_len<Byte_Offset>::value;
+		static const bool next_spans_bytes = protocol_helper::spans_bytes<next_bit_count, 0>::value;
 
 		static const T get(unsigned char const * const buf) {
 
@@ -266,11 +275,11 @@ namespace protocol_helper
 			// the next byte's value.  The formula below is:
 
 			// buf[0] & (mask to select field value in this byte) << (number of remaining field bits)
-			return (static_cast<T>((buf[0] & byte_mask::value)) << value_shift::value) +
-				protocol_helper::field_value<protocol_helper::spans_bytes<Field_Bits, Byte_Offset>::value,
-				Field_Bits - protocol_helper::byte_mask_len<Byte_Offset>::value,
-				0,
-				T>::get(buf + 1);
+			return (static_cast<T>((buf[0] & byte_mask::value)) << value_shift) +
+				protocol_helper::condition<next_spans_bytes,
+							   protocol_helper::recursive_field_value<next_bit_count, 0, T>,
+							   protocol_helper::terminal_field_value<next_bit_count, 0, T>
+							   >::type::get(buf + 1);
 		}
 
 		static void set(unsigned char * const buf, const T val) {
@@ -283,15 +292,38 @@ namespace protocol_helper
 			buf[0] &= static_cast<unsigned char>(~byte_mask::value);
 
 			// Set current byte
-			buf[0] |= ((val & value_mask::value) >> value_shift::value);
+			buf[0] |= ((val & value_mask::value) >> value_shift);
 
-			// Set next byte
-			protocol_helper::field_value<
-				protocol_helper::spans_bytes<Field_Bits, Byte_Offset>::value,
-				Field_Bits - protocol_helper::byte_mask_len<Byte_Offset>::value,
-				0,
-				T>::set(buf + 1, val);
+			protocol_helper::condition<next_spans_bytes,
+						   protocol_helper::recursive_field_value<next_bit_count, 0, T>,
+						   protocol_helper::terminal_field_value<next_bit_count, 0, T>
+						   >::type::set(buf + 1, val);
 		}
+	};
+
+	template <size_t Bits, size_t Offset, class T>
+	struct field_value
+	{
+		typedef typename protocol_helper::condition<protocol_helper::spans_bytes<Bits, Offset>::value,
+							    protocol_helper::recursive_field_value<Bits, Offset, T>,
+							    protocol_helper::terminal_field_value<Bits, Offset, T>
+							    >::type type;
+	};
+
+	/// Defines the field traits which are dependent on the protocol
+	template <size_t Field, class Tuple>
+	struct field_protocol_traits
+	{
+		/// The type of the field
+		typedef typename std::tuple_element<Field, Tuple>::type type;
+		/// The number of bits before the field's bits in a buffer
+		static const size_t bit_offset = protocol_helper::field_bit_offset<Field, Tuple>::value;
+		/// The bit offset into the fields first byte
+		static const size_t byte_bit_offset = bit_offset % protocol_helper::bits_per_byte;
+		/// The index of the field's first byte in a buffer
+		static const size_t byte_index = protocol_helper::field_first_byte<Field, Tuple>::value;
+		/// True if the field spans multiple bytes in a buffer
+		static const bool spans_bytes = protocol_helper::spans_bytes<type::bits, bit_offset>::value;
 	};
 
 	/// Class that represents a protocol defined by a field tuple
@@ -306,13 +338,16 @@ namespace protocol_helper
 		typedef Tuple tuple_type;
 
 		/// number of bits in the protocol
-		static const size_t bit_count = protocol_helper::protocol_length<Tuple>::value;
+		static const size_t bits = protocol_helper::protocol_length<Tuple>::value;
 
 		/// number of bytes required to store the protocols buffer
-		static const size_t byte_count = protocol_helper::required_bytes<bit_count>::value;
+		static const size_t bytes = protocol_helper::required_bytes<bits>::value;
 
 		/// Number of fields the protocol has
-		static const size_t field_count = std::tuple_size<Tuple>::value;
+		static const size_t fields = std::tuple_size<Tuple>::value;
+
+		/// std::array representation of the protocol's buffer
+		typedef std::array<unsigned char, bytes> array_type;
 
 		/// Accessor for a protocol field given a protocol buffer
 		/**
@@ -325,33 +360,45 @@ namespace protocol_helper
 		/// Sets a protocol field's value
 		/**
 		 *  @tparam I Order number of the field in the protocol tuple,
-		 *  @param buf Protocol buffer
+		 *  @param buf Protocol buffern
 		 *  @param val Value to set the field to
 		 */
 		template<size_t I>
 		static void field_value(unsigned char * const buf, const typename protocol_helper::field_type<I, Tuple>::type value);
+
+		/// Defines the field_protocol_traits for the field
+		/**
+		 *  @tparam I Order number of the field in the protocol tuple
+		 */
+		template<size_t I>
+		struct field_traits: public protocol_helper::field_protocol_traits<I, Tuple> {};
+
+		/// Provides a field type
+		/**
+		 *  @tparam I Order number of the field in the protocol tuple
+		 */
+		template <size_t I>
+		struct field: public protocol_helper::field<protocol_helper::field_bits<I, Tuple>::value,
+							    typename protocol_helper::field_type<I, Tuple>::type> {};
 	};
 
 	template<class Tuple>
 	template<size_t I>
 	const typename protocol_helper::field_type<I, Tuple>::type protocol<Tuple>::field_value(unsigned char const * const buf)
 	{
-		return
-			protocol_helper::field_value<
-				protocol_helper::field_spans_bytes<I, Tuple>::value,
-				protocol_helper::field_bits<I, Tuple>::value,
-				protocol_helper::field_bit_offset<I, Tuple>::value % protocol_helper::bits_per_byte::value,
-				typename protocol_helper::field_type<I, Tuple>::type>::get(buf);
+		return protocol_helper::field_value<protocol_helper::field_bits<I, Tuple>::value,
+						    protocol_helper::byte_offset<protocol_helper::field_bit_offset<I, Tuple>::value>::value,
+						    typename protocol_helper::field_type<I, Tuple>::type
+						    >::type::get(buf + protocol_helper::field_first_byte<I, Tuple>::value);
 	}
 
 	template<class Tuple>
 	template<size_t I>
 	void protocol<Tuple>::field_value(unsigned char * const buf, const typename protocol_helper::field_type<I, Tuple>::type val)
 	{
-		protocol_helper::field_value<
-			protocol_helper::field_spans_bytes<I, Tuple>::value,
-			protocol_helper::field_bits<I, Tuple>::value,
-			protocol_helper::field_bit_offset<I, Tuple>::value % protocol_helper::bits_per_byte::value,
-			typename protocol_helper::field_type<I, Tuple>::type>::set(buf, val);
+		protocol_helper::field_value<protocol_helper::field_bits<I, Tuple>::value,
+					     protocol_helper::byte_offset<protocol_helper::field_bit_offset<I, Tuple>::value>::value,
+					     typename protocol_helper::field_type<I, Tuple>::type
+					     >::type::set(buf + protocol_helper::field_first_byte<I, Tuple>::value, val);
 	}
 }
