@@ -316,6 +316,8 @@ namespace protocol_helper
 	{
 		/// The type of the field
 		typedef typename std::tuple_element<Field, Tuple>::type type;
+		/// The field index in the protocol
+		static const size_t index = Field;
 		/// The number of bits before the field's bits in a buffer
 		static const size_t bit_offset = protocol_helper::field_bit_offset<Field, Tuple>::value;
 		/// The bit offset into the fields first byte
