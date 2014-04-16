@@ -25,54 +25,212 @@ typedef tuple<field<1, bool>,    // field 0, offset 0
 
 typedef protocol<test> test_proto;
 
-template <size_t Field, class Protocol>
-static void test_field(unsigned char * const buf)
-{
-	typedef typename Protocol::template field_traits<Field> field_traits;
-	typedef typename Protocol::template field<Field> field;
-	const typename field_traits::type::value_type expected_fv = lsb_mask<field::bits,
-									     0,
-									     typename field::value_type
-									     >::value;
-	Protocol::template field_value<Field>(buf, expected_fv);
-	const typename field::value_type real_fv = Protocol::template field_value<Field>(buf);
-	if (expected_fv != real_fv) {
+template <class Field_Traits>
+static void check_field(typename Field_Traits::type::value_type expected,
+			typename Field_Traits::type::value_type real,
+			char const * const msg,
+			unsigned char const * const buf) {
+	typedef typename Field_Traits::type field;
+	if (expected != real) {
 		stringstream ss;
-		ss << "field: " << std::dec << Field << ", bits: " << field::bits << ", offset: " << field_traits::byte_bit_offset << endl
-		   << "expected value (" << std::hex << std::showbase << expected_fv
-		   << ") != real value (" << std::hex << std::showbase << real_fv << ")" << endl;
+		ss << "field: " << std::dec << Field_Traits::index
+		   << ", bits: " << field::bits
+		   << ", offset: " << Field_Traits::byte_bit_offset << endl
+
+		   << "expected value (" << std::hex << std::showbase << expected
+		   << ") != real value (" << std::hex << std::showbase << real << ")" << endl
+
+		   << msg << endl;
 
 		ss << "field bytes: ";
 		for (size_t i = 0; i < field::bytes; ++i) {
-		      ss << std::hex << std::showbase << static_cast<uint16_t>(buf[i + field_traits::byte_index]) << ' ';
+		      ss << std::hex << std::showbase << static_cast<uint16_t>(buf[i + Field_Traits::byte_index]) << ' ';
 		   }
 		throw logic_error(ss.str());
 	}
+}
+
+// middle field, so previous and next fields exist
+template <class PField_Traits,
+	  class Field_Traits,
+	  class NField_Traits,
+	  class Protocol>
+struct test_field
+{
+	static void test(unsigned char * const buf) {
+		typedef PField_Traits pfield_traits;
+		typedef NField_Traits nfield_traits;
+		typedef Field_Traits field_traits;
+		typedef typename Field_Traits::type field;
+		const typename field::value_type expected_fv = lsb_mask<field::bits,
+									0,
+									typename field::value_type
+									>::value;
+
+		// set the Previous and Next field values
+		Protocol::template field_value<pfield_traits::index>(buf, 0);
+		Protocol::template field_value<nfield_traits::index>(buf, 0);
+
+		Protocol::template field_value<field_traits::index>(buf, expected_fv);
+		const typename field::value_type real_fv = Protocol::template field_value<field_traits::index>(buf);
+
+		check_field<field_traits>(expected_fv,
+					  real_fv,
+					  "error setting field",
+					  buf);
+		check_field<pfield_traits>(0,
+					   Protocol::template field_value<pfield_traits::index>(buf),
+					   "setting field affected previous field",
+					   buf);
+		check_field<nfield_traits>(0,
+					   Protocol::template field_value<nfield_traits::index>(buf),
+					   "setting field affected next field",
+					   buf);
+	}
 };
 
-template<size_t Field, class Protocol>
+// Last field, so there's a previous field, but no next field
+template <class PField_Traits,
+	  class Field_Traits,
+	  class Protocol>
+struct test_field<PField_Traits, Field_Traits, void, Protocol>
+{
+	static void test(unsigned char * const buf) {
+		typedef PField_Traits pfield_traits;
+		typedef Field_Traits field_traits;
+		typedef typename Field_Traits::type field;
+		const typename field::value_type expected_fv = lsb_mask<field::bits,
+									0,
+									typename field::value_type
+									>::value;
+
+		// set the Previous field value
+		Protocol::template field_value<pfield_traits::index>(buf, 0);
+
+		Protocol::template field_value<field_traits::index>(buf, expected_fv);
+		const typename field::value_type real_fv = Protocol::template field_value<field_traits::index>(buf);
+
+		check_field<field_traits>(expected_fv,
+					  real_fv,
+					  "error setting field",
+					  buf);
+		check_field<pfield_traits>(0,
+					   Protocol::template field_value<pfield_traits::index>(buf),
+					   "setting field affected previous field",
+					   buf);
+	}
+};
+
+// First field to test and the number of fields is greater than 1, so
+// there's no previous field, but there's a next field
+template <class Field_Traits,
+	  class NField_Traits,
+	  class Protocol>
+struct test_field<void, Field_Traits, NField_Traits, Protocol>
+{
+	static void test(unsigned char * const buf) {
+		typedef NField_Traits nfield_traits;
+		typedef Field_Traits field_traits;
+		typedef typename Field_Traits::type field;
+		const typename field::value_type expected_fv = lsb_mask<field::bits,
+									0,
+									typename field::value_type
+									>::value;
+
+		Protocol::template field_value<nfield_traits::index>(buf, 0);
+
+		Protocol::template field_value<field_traits::index>(buf, expected_fv);
+		const typename field::value_type real_fv = Protocol::template field_value<field_traits::index>(buf);
+
+		check_field<field_traits>(expected_fv,
+					  real_fv,
+					  "error setting field",
+					  buf);
+		check_field<nfield_traits>(0,
+					   Protocol::template field_value<nfield_traits::index>(buf),
+					   "setting field affected next field",
+					   buf);
+	}
+};
+
+// Only one field, so there's no previous field and no next field
+template <class Field_Traits,
+	  class Protocol>
+struct test_field<void, Field_Traits, void, Protocol>
+{
+	static void test(unsigned char * const buf) {
+		typedef Field_Traits field_traits;
+		typedef typename Field_Traits::type field;
+		const typename field::value_type expected_fv = lsb_mask<field::bits,
+									0,
+									typename field::value_type
+									>::value;
+
+		Protocol::template field_value<field_traits::index>(buf, expected_fv);
+		const typename field::value_type real_fv = Protocol::template field_value<field_traits::index>(buf);
+
+		check_field<field_traits>(expected_fv,
+					  real_fv,
+					  "error setting field",
+					  buf);
+	}
+};
+
+// Field with a previous and a next field
+template<size_t Prev_Field, size_t Field, class Protocol>
 struct test_fields
 {
-	static void test(unsigned char * const buf)
-		{
-			test_field<Field, Protocol>(buf);
-			test_fields<Field - 1, Protocol>::test(buf);
-		}
+	static void test(unsigned char * const buf) {
+		test_field<typename Protocol::template field_traits<Prev_Field>,
+			   typename Protocol::template field_traits<Field>,
+			   typename Protocol::template field_traits<Field - 1>,
+			   Protocol>::test(buf);
+		test_fields<Field, Field - 1, Protocol>::test(buf);
+	}
 };
 
-template<class Protocol>
-struct test_fields<0, Protocol>
+// First field to test, so there's no previous field, and there's a next field
+template<size_t Field, class Protocol>
+struct test_fields<0, Field, Protocol>
 {
 	static void test(unsigned char * const buf)
 		{
-			test_field<0, Protocol>(buf);
+			test_field<void,
+				   typename Protocol::template field_traits<Field>,
+				   typename Protocol::template field_traits<Field - 1>,
+				   Protocol>::test(buf);
+			test_fields<Field, Field - 1, Protocol>::test(buf);
 		}
+};
+
+// Last field to test, so there's a previous field, but no next field
+template<size_t Prev_Field, class Protocol>
+struct test_fields<Prev_Field, 0, Protocol>
+{
+	static void test(unsigned char * const buf) {
+		test_field<typename Protocol::template field_traits<Prev_Field>,
+			   typename Protocol::template field_traits<0>,
+			   void,
+			   Protocol>::test(buf);
+	}
+};
+
+// Only one field to test, so there's no previous field, and no next field
+template <class Protocol>
+struct test_fields<0, 0, Protocol>
+{
+	static void test(unsigned char * const buf) {
+		test_field<void,
+			   typename Protocol::template field_traits<0>,
+			   void,
+			   Protocol>::test(buf);
+	}
 };
 
 template<class Protocol>
 void test_protocol(unsigned char * const buf)
 {
-	test_fields<Protocol::fields - 1, Protocol>::test(buf);
+	test_fields<0, Protocol::traits::fields - 1, Protocol>::test(buf);
 }
 
 template <size_t Bit, size_t Field_Offset, size_t Field_Size, class Type>
@@ -214,7 +372,7 @@ try {
 	buf.fill(0);
 	test_bits<7, 0, field_size, field_type>::test(buf.data());
 
-	test_proto::array_type proto_buf; 
+	test_proto::traits::array_type proto_buf;
 	test_protocol<test_proto>(proto_buf.data());
 
 	return 0;
