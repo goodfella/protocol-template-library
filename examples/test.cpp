@@ -12,15 +12,130 @@
 using namespace std;
 using namespace protocol_helper;
 
-typedef tuple<field<1, bool>,    // field 0, offset 0
-	      field<2, uint8_t>, // field 1, offset 1
-	      field<3, uint8_t>, // field 2, offset 3
-	      field<4, uint8_t>, // field 3, offset 6
-	      field<5, uint8_t>, // field 4, offset 10:2
-	      field<6, uint8_t>, // field 5, offset 15:7
-	      field<7, uint8_t>, // field 6, offset 21:5
-	      field<8, uint8_t>, // field 7, offset 28:4
-	      field<9, uint16_t> // field 8, offset 36:4
+typedef tuple<field<1, bool>,
+	      field<1, uint8_t>,
+	      field<2, uint8_t>,
+	      field<3, uint8_t>,
+	      field<4, uint8_t>,
+	      field<5, uint8_t>,
+	      field<6, uint8_t>,
+	      field<7, uint8_t>,
+	      field<8, uint8_t>,
+
+	      field<1, uint16_t>,
+	      field<2, uint16_t>,
+	      field<3, uint16_t>,
+	      field<4, uint16_t>,
+	      field<5, uint16_t>,
+	      field<6, uint16_t>,
+	      field<7, uint16_t>,
+	      field<8, uint16_t>,
+	      field<9, uint16_t>,
+	      field<10, uint16_t>,
+	      field<11, uint16_t>,
+	      field<12, uint16_t>,
+	      field<13, uint16_t>,
+	      field<14, uint16_t>,
+	      field<15, uint16_t>,
+	      field<16, uint16_t>,
+
+	      field<1, uint32_t>,
+	      field<2, uint32_t>,
+	      field<3, uint32_t>,
+	      field<4, uint32_t>,
+	      field<5, uint32_t>,
+	      field<6, uint32_t>,
+	      field<7, uint32_t>,
+	      field<8, uint32_t>,
+	      field<9, uint32_t>,
+	      field<10, uint32_t>,
+	      field<11, uint32_t>,
+	      field<12, uint32_t>,
+	      field<13, uint32_t>,
+	      field<14, uint32_t>,
+	      field<15, uint32_t>,
+	      field<16, uint32_t>,
+	      field<17, uint32_t>,
+	      field<18, uint32_t>,
+	      field<19, uint32_t>,
+	      field<20, uint32_t>,
+	      field<21, uint32_t>,
+	      field<22, uint32_t>,
+	      field<23, uint32_t>,
+	      field<24, uint32_t>,
+	      field<25, uint32_t>,
+	      field<26, uint32_t>,
+	      field<27, uint32_t>,
+	      field<28, uint32_t>,
+	      field<29, uint32_t>,
+	      field<30, uint32_t>,
+	      field<31, uint32_t>,
+	      field<32, uint32_t>,
+
+	      field<1, uint64_t>,
+	      field<2, uint64_t>,
+	      field<3, uint64_t>,
+	      field<4, uint64_t>,
+	      field<5, uint64_t>,
+	      field<6, uint64_t>,
+	      field<7, uint64_t>,
+	      field<8, uint64_t>,
+	      field<9, uint64_t>,
+	      field<10, uint64_t>,
+	      field<11, uint64_t>,
+	      field<12, uint64_t>,
+	      field<13, uint64_t>,
+	      field<14, uint64_t>,
+	      field<15, uint64_t>,
+	      field<16, uint64_t>,
+	      field<17, uint64_t>,
+	      field<18, uint64_t>,
+	      field<19, uint64_t>,
+	      field<20, uint64_t>,
+	      field<21, uint64_t>,
+	      field<22, uint64_t>,
+	      field<23, uint64_t>,
+	      field<24, uint64_t>,
+	      field<25, uint64_t>,
+	      field<26, uint64_t>,
+	      field<27, uint64_t>,
+	      field<28, uint64_t>,
+	      field<29, uint64_t>,
+	      field<30, uint64_t>,
+	      field<31, uint64_t>,
+	      field<32, uint64_t>,
+	      field<33, uint64_t>,
+	      field<34, uint64_t>,
+	      field<35, uint64_t>,
+	      field<36, uint64_t>,
+	      field<37, uint64_t>,
+	      field<38, uint64_t>,
+	      field<39, uint64_t>,
+	      field<40, uint64_t>,
+	      field<41, uint64_t>,
+	      field<42, uint64_t>,
+	      field<43, uint64_t>,
+	      field<44, uint64_t>,
+	      field<45, uint64_t>,
+	      field<46, uint64_t>,
+	      field<47, uint64_t>,
+	      field<48, uint64_t>,
+	      field<49, uint64_t>,
+	      field<50, uint64_t>,
+	      field<51, uint64_t>,
+	      field<52, uint64_t>,
+	      field<53, uint64_t>,
+	      field<54, uint64_t>,
+	      field<55, uint64_t>,
+	      field<56, uint64_t>,
+	      field<57, uint64_t>,
+	      field<58, uint64_t>,
+	      field<59, uint64_t>,
+	      field<60, uint64_t>,
+	      field<61, uint64_t>,
+	      field<62, uint64_t>,
+	      field<63, uint64_t>,
+	      field<64, uint64_t>
 	      > test;
 
 typedef protocol<test> test_proto;
@@ -193,14 +308,13 @@ struct test_fields
 template<size_t Field, class Protocol>
 struct test_fields<0, Field, Protocol>
 {
-	static void test(unsigned char * const buf)
-		{
-			test_field<void,
-				   typename Protocol::template field_traits<Field>,
-				   typename Protocol::template field_traits<Field - 1>,
-				   Protocol>::test(buf);
-			test_fields<Field, Field - 1, Protocol>::test(buf);
-		}
+	static void test(unsigned char * const buf) {
+		test_field<void,
+			   typename Protocol::template field_traits<Field>,
+			   typename Protocol::template field_traits<Field - 1>,
+			   Protocol>::test(buf);
+		test_fields<Field, Field - 1, Protocol>::test(buf);
+	}
 };
 
 // Last field to test, so there's a previous field, but no next field
@@ -342,39 +456,8 @@ void test_types()
 
 int main()
 try {
-	typedef uint16_t field_type;
-	const size_t field_size = protocol_helper::bits_per_byte;
-	array<unsigned char, protocol_helper::required_bytes<field_size>::value * 2> buf;
-
-	test_types<tuple<uint16_t> >();
-
-	buf.fill(0);
-	test_bits<7, 7, field_size, field_type>::test(buf.data());
-
-	buf.fill(0);
-	test_bits<7, 6, field_size, field_type>::test(buf.data());
-
-	buf.fill(0);
-	test_bits<7, 5, field_size, field_type>::test(buf.data());
-
-	buf.fill(0);
-	test_bits<7, 4, field_size, field_type>::test(buf.data());
-
-	buf.fill(0);
-	test_bits<7, 3, field_size, field_type>::test(buf.data());
-
-	buf.fill(0);
-	test_bits<7, 2, field_size, field_type>::test(buf.data());
-
-	buf.fill(0);
-	test_bits<7, 1, field_size, field_type>::test(buf.data());
-
-	buf.fill(0);
-	test_bits<7, 0, field_size, field_type>::test(buf.data());
-
 	test_proto::traits::array_type proto_buf;
 	test_protocol<test_proto>(proto_buf.data());
-
 	return 0;
 
 } catch(exception& ex) {
