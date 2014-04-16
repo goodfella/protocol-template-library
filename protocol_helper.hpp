@@ -328,17 +328,9 @@ namespace protocol_helper
 		static const bool spans_bytes = protocol_helper::spans_bytes<type::bits, bit_offset>::value;
 	};
 
-	/// Class that represents a protocol defined by a field tuple
-	/**
-	 *  @tparam Tuple The tuple that represents the protocol
-	 */
-	template<class Tuple>
-	class protocol
+	template <class Tuple>
+	struct protocol_traits
 	{
-		public:
-
-		typedef Tuple tuple_type;
-
 		/// number of bits in the protocol
 		static const size_t bits = protocol_helper::protocol_length<Tuple>::value;
 
@@ -350,6 +342,19 @@ namespace protocol_helper
 
 		/// std::array representation of the protocol's buffer
 		typedef std::array<unsigned char, bytes> array_type;
+	};
+
+	/// Class that represents a protocol defined by a field tuple
+	/**
+	 *  @tparam Tuple The tuple that represents the protocol
+	 */
+	template<class Tuple>
+	class protocol
+	{
+		public:
+
+		typedef Tuple tuple_type;
+		struct traits: public protocol_traits<Tuple> {};
 
 		/// Accessor for a protocol field given a protocol buffer
 		/**
