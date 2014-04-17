@@ -2,21 +2,10 @@
 #include <tuple>
 #include <limits>
 #include <array>
+#include <type_traits>
 
 namespace protocol_helper
 {
-	template <bool, class T, class F>
-	struct condition
-	{
-		typedef T type;
-	};
-
-	template <class T, class F>
-	struct condition<false, T, F>
-	{
-		typedef F type;
-	};
-
 	static const size_t bits_per_byte = static_cast<size_t>(std::numeric_limits<unsigned char>::digits);
 
 	// Returns the number of bytes required to store the provided bits
@@ -276,10 +265,10 @@ namespace protocol_helper
 
 			// buf[0] & (mask to select field value in this byte) << (number of remaining field bits)
 			return (static_cast<T>((buf[0] & byte_mask::value)) << value_shift) +
-				protocol_helper::condition<next_spans_bytes,
-							   protocol_helper::recursive_field_value<next_bit_count, 0, T>,
-							   protocol_helper::terminal_field_value<next_bit_count, 0, T>
-							   >::type::get(buf + 1);
+				std::conditional<next_spans_bytes,
+						 protocol_helper::recursive_field_value<next_bit_count, 0, T>,
+						 protocol_helper::terminal_field_value<next_bit_count, 0, T>
+						 >::type::get(buf + 1);
 		}
 
 		static void set(unsigned char * const buf, const T val) {
@@ -294,20 +283,20 @@ namespace protocol_helper
 			// Set current byte
 			buf[0] |= ((val & value_mask::value) >> value_shift);
 
-			protocol_helper::condition<next_spans_bytes,
-						   protocol_helper::recursive_field_value<next_bit_count, 0, T>,
-						   protocol_helper::terminal_field_value<next_bit_count, 0, T>
-						   >::type::set(buf + 1, val);
+			std::conditional<next_spans_bytes,
+					 protocol_helper::recursive_field_value<next_bit_count, 0, T>,
+					 protocol_helper::terminal_field_value<next_bit_count, 0, T>
+					 >::type::set(buf + 1, val);
 		}
 	};
 
 	template <size_t Bits, size_t Offset, class T>
 	struct field_value
 	{
-		typedef typename protocol_helper::condition<protocol_helper::spans_bytes<Bits, Offset>::value,
-							    protocol_helper::recursive_field_value<Bits, Offset, T>,
-							    protocol_helper::terminal_field_value<Bits, Offset, T>
-							    >::type type;
+		typedef typename std::conditional<protocol_helper::spans_bytes<Bits, Offset>::value,
+						  protocol_helper::recursive_field_value<Bits, Offset, T>,
+						  protocol_helper::terminal_field_value<Bits, Offset, T>
+						  >::type type;
 	};
 
 	/// Defines the field traits which are dependent on the protocol
