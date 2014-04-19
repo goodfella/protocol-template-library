@@ -3,8 +3,6 @@
 #include <limits>
 #include <array>
 #include <type_traits>
-#include <iostream>
-#include <iomanip>
 
 namespace protocol_helper
 {
@@ -214,12 +212,14 @@ namespace protocol_helper
 	template<size_t Field_Bits, size_t Byte_Offset, class T>
 	struct terminal_field_value
 	{
+		private:
 		typedef protocol_helper::msb_mask<Field_Bits,
 						  Byte_Offset,
 						  unsigned char> byte_mask;
 
 		static const size_t value_shift = protocol_helper::bits_per_byte - Field_Bits - Byte_Offset;
 
+		public:
 		static const T get(unsigned char const * const buf) {
 			// Select the bits from buf with the byte order's byte
 			// mask and right shift the resulting value the
@@ -251,6 +251,7 @@ namespace protocol_helper
 	template<size_t Field_Bits, size_t Byte_Offset, class T>
 	struct recursive_field_value
 	{
+		private:
 		typedef protocol_helper::msb_mask<protocol_helper::byte_mask_len<Byte_Offset>::value,
 						  Byte_Offset,
 						  unsigned char> byte_mask;
@@ -259,6 +260,7 @@ namespace protocol_helper
 		static const size_t next_bit_count = Field_Bits - protocol_helper::byte_mask_len<Byte_Offset>::value;
 		static const bool next_spans_bytes = protocol_helper::spans_bytes<next_bit_count, 0>::value;
 
+		public:
 		static const T get(unsigned char const * const buf) {
 
 			// Selects the bits from buf with the mask, and left
