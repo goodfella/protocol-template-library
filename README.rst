@@ -18,6 +18,13 @@ the top of the build tree::
  cmake ..
  make
 
+To build an optimized version issue the following commands::
+
+ mkdir release-build-dir
+ cd release-build-dir
+ cmake -DCMAKE_BUILD_TYPE=Release ..
+ make
+
 Usage Restrictions
 ~~~~~~~~~~~~~~~~~~
 
