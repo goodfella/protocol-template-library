@@ -7,6 +7,7 @@
 #include <sstream>
 #include <string>
 #include <array>
+#include <type_traits>
 #include "protocol_helper.hpp"
 
 using namespace std;
@@ -165,6 +166,39 @@ static void check_field(typename Field_Traits::type::value_type expected,
 	}
 }
 
+template <class Field_Traits, class Protocol>
+struct check_byte_order
+{
+	static void check(unsigned char * const buf) {
+		typedef	typename Field_Traits::type::value_type field_type;
+		field_type prev_val = numeric_limits<field_type>::max();
+
+		for (size_t i = 0; i < Field_Traits::type::bytes; ++i) {
+			Protocol::template field_value<Field_Traits::index>(buf, 0);
+			buf[i + Field_Traits::byte_index] = 0xff;
+			field_type val = Protocol::template field_value<Field_Traits::index>(buf);
+			if (val >= prev_val) {
+				stringstream ss;
+				ss << "field: " << std::dec << Field_Traits::index
+				   << ", bits: " << Field_Traits::type::bits
+				   << ", offset: " << Field_Traits::byte_bit_offset
+				   << ", val: " << val
+				   << ", prev val: " << prev_val
+				   << ", byte index: " << i << endl
+
+				   << ", byte order check failed";
+				throw logic_error(ss.str());
+			}
+			prev_val = val;
+		}
+	}
+};
+
+struct noop
+{
+	static void check(unsigned char * const) {}
+};
+
 // middle field, so previous and next fields exist
 template <class PField_Traits,
 	  class Field_Traits,
@@ -201,6 +235,10 @@ struct test_field
 					   Protocol::template field_value<nfield_traits::index>(buf),
 					   "setting field affected next field",
 					   buf);
+		conditional<field_traits::spans_bytes,
+			    check_byte_order<field_traits, Protocol>,
+			    noop
+			    >::type::check(buf);
 	}
 };
 
@@ -233,6 +271,10 @@ struct test_field<PField_Traits, Field_Traits, void, Protocol>
 					   Protocol::template field_value<pfield_traits::index>(buf),
 					   "setting field affected previous field",
 					   buf);
+		conditional<field_traits::spans_bytes,
+			    check_byte_order<field_traits, Protocol>,
+			    noop
+			    >::type::check(buf);
 	}
 };
 
@@ -265,6 +307,10 @@ struct test_field<void, Field_Traits, NField_Traits, Protocol>
 					   Protocol::template field_value<nfield_traits::index>(buf),
 					   "setting field affected next field",
 					   buf);
+		conditional<field_traits::spans_bytes,
+			    check_byte_order<field_traits, Protocol>,
+			    noop
+			    >::type::check(buf);
 	}
 };
 
@@ -288,6 +334,10 @@ struct test_field<void, Field_Traits, void, Protocol>
 					  real_fv,
 					  "error setting field",
 					  buf);
+		conditional<field_traits::spans_bytes,
+			    check_byte_order<field_traits, Protocol>,
+			    noop
+			    >::type::check(buf);
 	}
 };
 
@@ -457,6 +507,7 @@ void test_types()
 int main()
 try {
 	test_proto::traits::array_type proto_buf;
+	proto_buf.fill(0);
 	test_protocol<test_proto>(proto_buf.data());
 	return 0;
 
