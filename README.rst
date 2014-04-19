@@ -45,7 +45,65 @@ bits of the field.
 Defining Protocols
 ==================
 
-Protocols in this library are defined by a field list.  A protocol's
-field list defines the length and underlying type for each field.
-Fields must have a fixed size and currently must be no more than 64
-bits.
+Protocols are defined by a field list.  A field list is composed of
+fields.  A field is defined by the number of bits that make up the
+field, which must be between 1 and 64 inclusive, and an underlying
+type for the field's value.  Fields are specified with the
+protocol_helper::field structure.  A protocol's field list is
+represented by a std::tuple of protocol_helper::field structs.  The
+std::tuple field list is then passed to a protocol_helper::protocol
+class which provides access to the fields and defines various traits.
+
+A RFC 3550 RTP protocol specification is given below::
+
+ 	typedef std::tuple<protocol_helper::field<2, uint8_t>,    // Version
+			   protocol_helper::field<1, bool>,       // Padding bit
+			   protocol_helper::field<1, bool>,       // Extension bit
+			   protocol_helper::field<4, uint8_t>,    // CSRC count
+			   protocol_helper::field<1, bool>,       // Marker bit
+			   protocol_helper::field<7, uint8_t>,    // Payload type
+			   protocol_helper::field<16, uint16_t>,  // Sequence number
+			   protocol_helper::field<32, uint32_t>,  // Timestamp
+			   protocol_helper::field<32, uint32_t> > // SSRC
+	rtp_field_list;
+
+	typedef protocol_helper::protocol<rtp_field_list> rtp;
+
+The above code snippet defines the RTP protocol parts that are present
+in every RTP packet.  An example of setting and retrieving the RTP
+version is given below::
+
+        // Declare a buffer big enough to store the protocol fields
+        rtp::traits::array_type rtp_buf;
+ 
+        // Set the RTP version
+        rtp::field_value<0>(rtp_buf.data(), 2);
+ 
+        // Retrieve the RTP version
+        auto version = rtp::field_value<0>(rtp_buf.data());
+
+It's also possible to provide convienent labels for a protocol's
+fields via an enum class::
+
+	enum class rtp_fields : size_t {
+		version,
+		padding_bit,
+		extension_bit,
+		csrc_count,
+		marker_bit,
+		payload_type,
+		sequence_number,
+		timestamp,
+		ssrc
+	};
+
+This allows for the following::
+
+        // Declare a buffer big enough to store the protocol fields
+	rtp::traits::array_type rtp_buf;
+
+	// Set the RTP version
+	rtp::field_value<rtp_fields::version>(rtp_buf.data(), 2);
+
+	// Retrieve the RTP version
+	auto version = rtp::field_value<rtp_fields::version>(rtp_buf.data());
