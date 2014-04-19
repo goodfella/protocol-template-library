@@ -3,6 +3,8 @@
 #include <limits>
 #include <array>
 #include <type_traits>
+#include <iostream>
+#include <iomanip>
 
 namespace protocol_helper
 {
@@ -274,8 +276,8 @@ namespace protocol_helper
 		static void set(unsigned char * const buf, const T val) {
 
 			typedef protocol_helper::msb_mask<protocol_helper::byte_mask_len<Byte_Offset>::value,
-				std::numeric_limits<T>::digits - Field_Bits,
-				T> value_mask;
+							  (std::numeric_limits<T>::digits - Field_Bits),
+							  T> value_mask;
 
 			// Clear the current value
 			buf[0] &= static_cast<unsigned char>(~byte_mask::value);
