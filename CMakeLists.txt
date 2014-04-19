@@ -1,3 +1,3 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
-PROJECT(protocol-helper CXX)
+PROJECT(protocol-template-library CXX)
 ADD_SUBDIRECTORY(examples)
