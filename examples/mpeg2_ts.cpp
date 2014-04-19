@@ -2,7 +2,7 @@
 #include <iostream>
 #include "protocol_helper.hpp"
 using namespace std;
-using namespace protocol_helper;
+using namespace ptl;
 
 // Partial MPEG 2 transport stream header
 typedef tuple<field<8, unsigned char>,  // sync byte

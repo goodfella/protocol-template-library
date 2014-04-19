@@ -8,10 +8,10 @@ compiler.
 Building
 ========
 
-protocol-helper is a header library, so it doesn't require any
-building to use; however, the examples are built with CMake.  The
-examples can be built by issuing the following commands at the top of
-the build tree::
+The protocol template library is a header library, so it doesn't
+require any building to use; however, the examples are built with
+CMake.  The examples can be built by issuing the following commands at
+the top of the build tree::
 
  mkdir build-dir
  cd build-dir
@@ -49,25 +49,25 @@ Protocols are defined by a field list.  A field list is composed of
 fields.  A field is defined by the number of bits that make up the
 field, which must be between 1 and 64 inclusive, and an underlying
 type for the field's value.  Fields are specified with the
-protocol_helper::field structure.  A protocol's field list is
-represented by a std::tuple of protocol_helper::field structs.  The
-std::tuple field list is then passed to a protocol_helper::protocol
+ptl::field structure.  A protocol's field list is
+represented by a std::tuple of ptl::field structs.  The
+std::tuple field list is then passed to a ptl::protocol
 class which provides access to the fields and defines various traits.
 
 A RFC 3550 RTP protocol specification is given below::
 
- 	typedef std::tuple<protocol_helper::field<2, uint8_t>,    // Version
-			   protocol_helper::field<1, bool>,       // Padding bit
-			   protocol_helper::field<1, bool>,       // Extension bit
-			   protocol_helper::field<4, uint8_t>,    // CSRC count
-			   protocol_helper::field<1, bool>,       // Marker bit
-			   protocol_helper::field<7, uint8_t>,    // Payload type
-			   protocol_helper::field<16, uint16_t>,  // Sequence number
-			   protocol_helper::field<32, uint32_t>,  // Timestamp
-			   protocol_helper::field<32, uint32_t> > // SSRC
+ 	typedef std::tuple<ptl::field<2, uint8_t>,    // Version
+			   ptl::field<1, bool>,       // Padding bit
+			   ptl::field<1, bool>,       // Extension bit
+			   ptl::field<4, uint8_t>,    // CSRC count
+			   ptl::field<1, bool>,       // Marker bit
+			   ptl::field<7, uint8_t>,    // Payload type
+			   ptl::field<16, uint16_t>,  // Sequence number
+			   ptl::field<32, uint32_t>,  // Timestamp
+			   ptl::field<32, uint32_t> > // SSRC
 	rtp_field_list;
 
-	typedef protocol_helper::protocol<rtp_field_list> rtp;
+	typedef ptl::protocol<rtp_field_list> rtp;
 
 The above code snippet defines the RTP protocol parts that are present
 in every RTP packet.  An example of setting and retrieving the RTP

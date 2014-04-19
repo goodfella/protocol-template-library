@@ -11,7 +11,7 @@
 #include "protocol_helper.hpp"
 
 using namespace std;
-using namespace protocol_helper;
+using namespace ptl;
 
 typedef tuple<field<1, bool>,
 	      field<1, uint8_t>,
@@ -399,7 +399,7 @@ void test_protocol(unsigned char * const buf)
 
 template <size_t Bit, size_t Field_Offset, size_t Field_Size, class Type>
 void test_bit(unsigned char * const buf) {
-	typedef typename protocol_helper::field_value<Field_Size, Field_Offset, Type>::type fv_type;
+	typedef typename ptl::field_value<Field_Size, Field_Offset, Type>::type fv_type;
 	Type val = msb_mask<1, numeric_limits<Type>::digits - Field_Size + Bit, Type>::value;
 
 	fv_type::set(buf, val);
