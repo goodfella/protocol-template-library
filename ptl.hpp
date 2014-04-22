@@ -191,8 +191,8 @@ namespace ptl
 	template <size_t I, class Tuple>
 	struct field_spans_bytes
 	{
-		static const size_t value = ((ptl::field_bit_offset<I, Tuple>::value % ptl::bits_per_byte) +
-					     ptl::field_bits<I, Tuple>::value) > ptl::bits_per_byte;
+		static const bool value = ((ptl::field_bit_offset<I, Tuple>::value % ptl::bits_per_byte) +
+					   ptl::field_bits<I, Tuple>::value) > ptl::bits_per_byte;
 	};
 
 	/// Returns the length in bits of the protocol
