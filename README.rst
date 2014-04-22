@@ -49,6 +49,8 @@ destination system is not able to undo the byte swapping performed by
 the source system because it's unable to address the first and last 8
 bits of the field.
 
+Currently, only big endian byte order is supported.
+
 Defining Protocols
 ==================
 
