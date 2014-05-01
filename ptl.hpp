@@ -6,13 +6,13 @@
 
 namespace ptl
 {
-	static const size_t bits_per_byte = static_cast<size_t>(std::numeric_limits<unsigned char>::digits);
+	static const std::size_t bits_per_byte = static_cast<std::size_t>(std::numeric_limits<unsigned char>::digits);
 
 	// Returns the number of bytes required to store the provided bits
-	template <size_t Bits>
+	template <std::size_t Bits>
 	struct required_bytes
 	{
-		static const size_t value = (Bits / ptl::bits_per_byte) +
+		static const std::size_t value = (Bits / ptl::bits_per_byte) +
 			((Bits % ptl::bits_per_byte) == 0 ? 0 : 1);
 	};
 
@@ -24,14 +24,14 @@ namespace ptl
 	 *
 	 *  @tparam T the type of value
 	 */
-	template<size_t Bits, size_t Start, class T>
+	template<std::size_t Bits, std::size_t Start, class T>
 	struct msb_mask
 	{
 		static const T value = (static_cast<T>(1) << (std::numeric_limits<T>::digits - (Bits + Start))) + ptl::msb_mask<Bits - 1, Start, T>::value;
 	};
 
 	/// Base implementation of msb_mask
-	template<size_t Start, class T>
+	template<std::size_t Start, class T>
 	struct msb_mask<0, Start, T>
 	{
 		static const T value = 0;
@@ -45,14 +45,14 @@ namespace ptl
 	 *
 	 *  @tparam T The type of value
 	 */
-	template<size_t Bits, size_t Start, class T>
+	template<std::size_t Bits, std::size_t Start, class T>
 	struct lsb_mask
 	{
 		static const T value = (static_cast<T>(1) << (Bits - 1 + Start)) + lsb_mask<Bits - 1, Start, T>::value;
 	};
 
 	/// Base implementation of lsb_mask
-	template<size_t Start, class T>
+	template<std::size_t Start, class T>
 	struct lsb_mask<0, Start, T>
 	{
 		static const T value = 0;
@@ -62,10 +62,10 @@ namespace ptl
 	/**
 	 *  @tparam Byte_Offset The field's offset into the byte
 	 */
-	template<size_t Byte_Offset>
+	template<std::size_t Byte_Offset>
 	struct byte_mask_len
 	{
-		static const size_t value = ptl::bits_per_byte - Byte_Offset;
+		static const std::size_t value = ptl::bits_per_byte - Byte_Offset;
 	};
 
 	/// Returns whether or not Bits + Offset spans multiple bytes
@@ -73,7 +73,7 @@ namespace ptl
 	 *  @tparam Bits The number of bits
 	 *  @tparam Offset The offset
 	 */
-	template <size_t Bits, size_t Offset>
+	template <std::size_t Bits, std::size_t Offset>
 	struct spans_bytes
 	{
 		static const bool value = Bits + (Offset % ptl::bits_per_byte) > ptl::bits_per_byte;
@@ -83,10 +83,10 @@ namespace ptl
 	/**
 	 *  @tparam Bit_Offset The number of bits
 	 */
-	template <size_t Bit_Offset>
+	template <std::size_t Bit_Offset>
 	struct byte_offset
 	{
-		static const size_t value = Bit_Offset % ptl::bits_per_byte;
+		static const std::size_t value = Bit_Offset % ptl::bits_per_byte;
 	};
 
 	/// Represents a field in a binary protocol
@@ -94,21 +94,21 @@ namespace ptl
 	 *  @tparam Bits Number of bits that make up the field
 	 *  @tparam T Type used to represent the field
 	 */
-	template<size_t Bits, typename T>
+	template<std::size_t Bits, typename T>
 	struct field
 	{
 		static_assert(Bits > 0,
 			      "The number of bits must be greater than 0");
 		static_assert(!std::numeric_limits<T>::is_signed,
 			      "A field's type must be unsigned");
-		static_assert(static_cast<size_t>(std::numeric_limits<T>::digits) >= Bits,
+		static_assert(static_cast<std::size_t>(std::numeric_limits<T>::digits) >= Bits,
 			      "The number of bits in a field's type must be greater than or equal to the number of bits in the field");
 
 		typedef T value_type;
-		static const size_t bits = Bits;
+		static const std::size_t bits = Bits;
 
 		/// Number of bytes required to store the field's value
-		static const size_t bytes = ptl::required_bytes<bits>::value;
+		static const std::size_t bytes = ptl::required_bytes<bits>::value;
 	};
 
 	/// Returns the number of bits in a field
@@ -116,10 +116,10 @@ namespace ptl
 	 *  @tparam I Order number of the element within the tuple
 	 *  @tparam Tuple Tuple that contains the field
 	 */
-	template<size_t I, class Tuple>
+	template<std::size_t I, class Tuple>
 	struct field_bits
 	{
-		static const size_t value = std::tuple_element<I, Tuple>::type::bits;
+		static const std::size_t value = std::tuple_element<I, Tuple>::type::bits;
 	};
 
 	/// Provides a typedef for a fields type
@@ -127,7 +127,7 @@ namespace ptl
 	 *  @tparam I Order number of the element within the tuple
 	 *  @tparam Tuple Tuplethat contains the field
 	 */
-	template<size_t I, class Tuple>
+	template<std::size_t I, class Tuple>
 	struct field_type
 	{
 		typedef typename std::tuple_element<I, Tuple>::type::value_type type;
@@ -140,14 +140,14 @@ namespace ptl
 	 *  @tparam Tuple The tuple which contains the fields that represent
 	 *  the protocol
 	 */
-	template<size_t I, class Tuple>
+	template<std::size_t I, class Tuple>
 	struct field_bit_offset;
 
 	/// Recursive implementation of bit_offset
-	template<size_t I, class Tuple>
+	template<std::size_t I, class Tuple>
 	struct field_bit_offset
 	{
-		static const size_t value = ptl::field_bits<I - 1, Tuple>::value +
+		static const std::size_t value = ptl::field_bits<I - 1, Tuple>::value +
 			ptl::field_bit_offset<I - 1, Tuple>::value;
 	};
 
@@ -155,7 +155,7 @@ namespace ptl
 	template <class Tuple>
 	struct field_bit_offset<0, Tuple>
 	{
-		static const size_t value = 0;
+		static const std::size_t value = 0;
 	};
 
 	/// Returns the byte index of a field element in a tuple
@@ -165,10 +165,10 @@ namespace ptl
 	 *  @tparam Tuple The tuple which contains the fields that represent
 	 *  the protocol
 	 */
-	template<size_t I, class Tuple>
+	template<std::size_t I, class Tuple>
 	struct field_first_byte
 	{
-		static const size_t value = ptl::field_bit_offset<I, Tuple>::value / ptl::bits_per_byte;
+		static const std::size_t value = ptl::field_bit_offset<I, Tuple>::value / ptl::bits_per_byte;
 	};
 
 	/// Returns the last byte index of a field
@@ -176,10 +176,10 @@ namespace ptl
 	 *  @tparam I Order number of the element within the tuple
 	 *  @tparam Tuple The tuple the represents the protocol
 	 */
-	template <size_t I, class Tuple>
+	template <std::size_t I, class Tuple>
 	struct field_last_byte
 	{
-		static const size_t value = (ptl::field_bit_offset<I, Tuple>::value +
+		static const std::size_t value = (ptl::field_bit_offset<I, Tuple>::value +
 					     ptl::field_bits<I, Tuple>::value - 1) / ptl::bits_per_byte;
 	};
 
@@ -188,7 +188,7 @@ namespace ptl
 	 * @tparam I Order number of the element within the tuple
 	 * @tparam Tuple The tuple that represents the protocol
 	 */
-	template <size_t I, class Tuple>
+	template <std::size_t I, class Tuple>
 	struct field_spans_bytes
 	{
 		static const bool value = ((ptl::field_bit_offset<I, Tuple>::value % ptl::bits_per_byte) +
@@ -204,12 +204,12 @@ namespace ptl
 	template<class Tuple>
 	struct protocol_length
 	{
-		static const size_t value = ptl::field_bit_offset<std::tuple_size<Tuple>::value - 1, Tuple>::value +
+		static const std::size_t value = ptl::field_bit_offset<std::tuple_size<Tuple>::value - 1, Tuple>::value +
 			ptl::field_bits<std::tuple_size<Tuple>::value - 1, Tuple>::value;
 	};
 
 	/// Specialization for when the field does not span multiple bytes
-	template<size_t Field_Bits, size_t Byte_Offset, class T>
+	template<std::size_t Field_Bits, std::size_t Byte_Offset, class T>
 	struct terminal_field_value
 	{
 		private:
@@ -217,7 +217,7 @@ namespace ptl
 						  Byte_Offset,
 						  unsigned char> byte_mask;
 
-		static const size_t value_shift = ptl::bits_per_byte - Field_Bits - Byte_Offset;
+		static const std::size_t value_shift = ptl::bits_per_byte - Field_Bits - Byte_Offset;
 
 		public:
 		static const T get(unsigned char const * const buf) {
@@ -248,7 +248,7 @@ namespace ptl
 	 *   @tparam Byte_Offset The field's offset into the current byte
 	 *   @tparam T The type used to represent the field
 	 */
-	template<size_t Field_Bits, size_t Byte_Offset, class T>
+	template<std::size_t Field_Bits, std::size_t Byte_Offset, class T>
 	struct recursive_field_value
 	{
 		private:
@@ -256,8 +256,8 @@ namespace ptl
 						  Byte_Offset,
 						  unsigned char> byte_mask;
 
-		static const size_t value_shift = Field_Bits - (ptl::bits_per_byte - Byte_Offset);
-		static const size_t next_bit_count = Field_Bits - ptl::byte_mask_len<Byte_Offset>::value;
+		static const std::size_t value_shift = Field_Bits - (ptl::bits_per_byte - Byte_Offset);
+		static const std::size_t next_bit_count = Field_Bits - ptl::byte_mask_len<Byte_Offset>::value;
 		static const bool next_spans_bytes = ptl::spans_bytes<next_bit_count, 0>::value;
 
 		public:
@@ -294,7 +294,7 @@ namespace ptl
 		}
 	};
 
-	template <size_t Bits, size_t Offset, class T>
+	template <std::size_t Bits, std::size_t Offset, class T>
 	struct field_value
 	{
 		typedef typename std::conditional<ptl::spans_bytes<Bits, Offset>::value,
@@ -304,19 +304,19 @@ namespace ptl
 	};
 
 	/// Defines the field traits which are dependent on the protocol
-	template <size_t Field, class Tuple>
+	template <std::size_t Field, class Tuple>
 	struct field_protocol_traits
 	{
 		/// The type of the field
 		typedef typename std::tuple_element<Field, Tuple>::type type;
 		/// The field index in the protocol
-		static const size_t index = Field;
+		static const std::size_t index = Field;
 		/// The number of bits before the field's bits in a buffer
-		static const size_t bit_offset = ptl::field_bit_offset<Field, Tuple>::value;
+		static const std::size_t bit_offset = ptl::field_bit_offset<Field, Tuple>::value;
 		/// The bit offset into the fields first byte
-		static const size_t byte_bit_offset = bit_offset % ptl::bits_per_byte;
+		static const std::size_t byte_bit_offset = bit_offset % ptl::bits_per_byte;
 		/// The index of the field's first byte in a buffer
-		static const size_t byte_index = ptl::field_first_byte<Field, Tuple>::value;
+		static const std::size_t byte_index = ptl::field_first_byte<Field, Tuple>::value;
 		/// True if the field spans multiple bytes in a buffer
 		static const bool spans_bytes = ptl::spans_bytes<type::bits, bit_offset>::value;
 	};
@@ -325,13 +325,13 @@ namespace ptl
 	struct protocol_traits
 	{
 		/// number of bits in the protocol
-		static const size_t bits = ptl::protocol_length<Tuple>::value;
+		static const std::size_t bits = ptl::protocol_length<Tuple>::value;
 
 		/// number of bytes required to store the protocols buffer
-		static const size_t bytes = ptl::required_bytes<bits>::value;
+		static const std::size_t bytes = ptl::required_bytes<bits>::value;
 
 		/// Number of fields the protocol has
-		static const size_t fields = std::tuple_size<Tuple>::value;
+		static const std::size_t fields = std::tuple_size<Tuple>::value;
 
 		/// std::array representation of the protocol's buffer
 		typedef std::array<unsigned char, bytes> array_type;
@@ -354,7 +354,7 @@ namespace ptl
 		 *  @tparam I Order number of the field in the protocol tuple.
 		 *  @param buf Protocol buffer.
 		 */
-		template<size_t I>
+		template<std::size_t I>
 		static const typename ptl::field_type<I, Tuple>::type field_value(unsigned char const * const buf);
 
 		/// Sets a protocol field's value
@@ -363,27 +363,27 @@ namespace ptl
 		 *  @param buf Protocol buffern
 		 *  @param val Value to set the field to
 		 */
-		template<size_t I>
+		template<std::size_t I>
 		static void field_value(unsigned char * const buf, const typename ptl::field_type<I, Tuple>::type value);
 
 		/// Defines the field_protocol_traits for the field
 		/**
 		 *  @tparam I Order number of the field in the protocol tuple
 		 */
-		template<size_t I>
+		template<std::size_t I>
 		struct field_traits: public ptl::field_protocol_traits<I, Tuple> {};
 
 		/// Provides a field type
 		/**
 		 *  @tparam I Order number of the field in the protocol tuple
 		 */
-		template <size_t I>
+		template <std::size_t I>
 		struct field: public ptl::field<ptl::field_bits<I, Tuple>::value,
 							    typename ptl::field_type<I, Tuple>::type> {};
 	};
 
 	template<class Tuple>
-	template<size_t I>
+	template<std::size_t I>
 	const typename ptl::field_type<I, Tuple>::type protocol<Tuple>::field_value(unsigned char const * const buf)
 	{
 		return ptl::field_value<ptl::field_bits<I, Tuple>::value,
@@ -393,7 +393,7 @@ namespace ptl
 	}
 
 	template<class Tuple>
-	template<size_t I>
+	template<std::size_t I>
 	void protocol<Tuple>::field_value(unsigned char * const buf, const typename ptl::field_type<I, Tuple>::type val)
 	{
 		ptl::field_value<ptl::field_bits<I, Tuple>::value,
