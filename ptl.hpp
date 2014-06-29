@@ -2,7 +2,6 @@
 #include <tuple>
 #include <limits>
 #include <array>
-#include <type_traits>
 
 namespace ptl
 {
