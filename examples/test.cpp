@@ -211,11 +211,8 @@ struct test_field
 		typedef NField_Traits nfield_traits;
 		typedef Field_Traits field_traits;
 		typedef typename Field_Traits::type field;
-		const typename field::value_type expected_fv = lsb_mask<field::bits,
-									0,
-									typename field::value_type
-									>::value;
-
+		constexpr typename field::value_type expected_fv = lsb_mask<typename field::value_type>(field::bits,
+													0);
 		// set the Previous and Next field values
 		Protocol::template field_value<pfield_traits::index>(buf, 0);
 		Protocol::template field_value<nfield_traits::index>(buf, 0);
@@ -252,11 +249,8 @@ struct test_field<PField_Traits, Field_Traits, void, Protocol>
 		typedef PField_Traits pfield_traits;
 		typedef Field_Traits field_traits;
 		typedef typename Field_Traits::type field;
-		const typename field::value_type expected_fv = lsb_mask<field::bits,
-									0,
-									typename field::value_type
-									>::value;
-
+		constexpr typename field::value_type expected_fv = lsb_mask<typename field::value_type>(field::bits,
+												    0);
 		// set the Previous field value
 		Protocol::template field_value<pfield_traits::index>(buf, 0);
 
@@ -289,11 +283,8 @@ struct test_field<void, Field_Traits, NField_Traits, Protocol>
 		typedef NField_Traits nfield_traits;
 		typedef Field_Traits field_traits;
 		typedef typename Field_Traits::type field;
-		const typename field::value_type expected_fv = lsb_mask<field::bits,
-									0,
-									typename field::value_type
-									>::value;
-
+		constexpr typename field::value_type expected_fv = lsb_mask<typename field::value_type>(field::bits,
+												    0);
 		Protocol::template field_value<nfield_traits::index>(buf, 0);
 
 		Protocol::template field_value<field_traits::index>(buf, expected_fv);
@@ -322,11 +313,8 @@ struct test_field<void, Field_Traits, void, Protocol>
 	static void test(unsigned char * const buf) {
 		typedef Field_Traits field_traits;
 		typedef typename Field_Traits::type field;
-		const typename field::value_type expected_fv = lsb_mask<field::bits,
-									0,
-									typename field::value_type
-									>::value;
-
+		constexpr typename field::value_type expected_fv = lsb_mask<typename field::value_type>(field::bits,
+												    0);
 		Protocol::template field_value<field_traits::index>(buf, expected_fv);
 		const typename field::value_type real_fv = Protocol::template field_value<field_traits::index>(buf);
 
@@ -400,7 +388,7 @@ void test_protocol(unsigned char * const buf)
 template <size_t Bit, size_t Field_Offset, size_t Field_Size, class Type>
 void test_bit(unsigned char * const buf) {
 	typedef typename ptl::field_value<Field_Size, Field_Offset, Type>::type fv_type;
-	Type val = msb_mask<1, numeric_limits<Type>::digits - Field_Size + Bit, Type>::value;
+	Type val = ptl::msb_mask<Type>(1, numeric_limits<Type>::digits - Field_Size + Bit);
 
 	fv_type::set(buf, val);
 

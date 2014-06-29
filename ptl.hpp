@@ -6,88 +6,62 @@
 
 namespace ptl
 {
-	static const std::size_t bits_per_byte = static_cast<std::size_t>(std::numeric_limits<unsigned char>::digits);
+	static constexpr std::size_t bits_per_byte = static_cast<std::size_t>(std::numeric_limits<unsigned char>::digits);
 
 	// Returns the number of bytes required to store the provided bits
-	template <std::size_t Bits>
-	struct required_bytes
-	{
-		static const std::size_t value = (Bits / ptl::bits_per_byte) +
-			((Bits % ptl::bits_per_byte) == 0 ? 0 : 1);
-	};
+	constexpr std::size_t required_bytes(std::size_t bits) { return (bits / ptl::bits_per_byte) + ((bits % ptl::bits_per_byte) != 0); }
 
 	/// Returns the mask necessary to select bits starting from the most significant bit
 	/**
-	 *  @tparam Bits the number of bits to select
+	 *  @param bits the number of bits to select
 	 *
-	 *  @tparam Start Starting most significant bit (0 based)
+	 *  @param start Starting most significant bit (0 based)
 	 *
 	 *  @tparam T the type of value
 	 */
-	template<std::size_t Bits, std::size_t Start, class T>
-	struct msb_mask
-	{
-		static const T value = (static_cast<T>(1) << (std::numeric_limits<T>::digits - (Bits + Start))) + ptl::msb_mask<Bits - 1, Start, T>::value;
-	};
-
-	/// Base implementation of msb_mask
-	template<std::size_t Start, class T>
-	struct msb_mask<0, Start, T>
-	{
-		static const T value = 0;
-	};
+	template <class T>
+	constexpr T msb_mask(std::size_t bits, std::size_t start) {
+		return bits > 0 ? (static_cast<T>(1) << (std::numeric_limits<T>::digits - (bits + start))) +
+			ptl::msb_mask<T>(bits - 1, start) : 0;
+	}
 
 	/// Returns the mask necessary to select bits starting from the least significant bit
 	/**
-	 *  @tparam Bits The number of bits to select
+	 *  @param bits The number of bits to select
 	 *
-	 *  @tparam Start Starting least significant bit (0 based)
+	 *  @param start Starting least significant bit (0 based)
 	 *
 	 *  @tparam T The type of value
 	 */
-	template<std::size_t Bits, std::size_t Start, class T>
-	struct lsb_mask
-	{
-		static const T value = (static_cast<T>(1) << (Bits - 1 + Start)) + lsb_mask<Bits - 1, Start, T>::value;
-	};
-
-	/// Base implementation of lsb_mask
-	template<std::size_t Start, class T>
-	struct lsb_mask<0, Start, T>
-	{
-		static const T value = 0;
-	};
+	template <class T>
+	constexpr T lsb_mask(std::size_t bits, std::size_t start) {
+		return bits > 0 ? (static_cast<T>(1) << (bits - 1 + start)) + ptl::lsb_mask<T>(bits - 1, start) : 0;
+	}
 
 	/// Returns the number of bits to read from a byte
 	/**
-	 *  @tparam Byte_Offset The field's offset into the byte
+	 *  @param byte_offset The field's offset into the byte
 	 */
-	template<std::size_t Byte_Offset>
-	struct byte_mask_len
-	{
-		static const std::size_t value = ptl::bits_per_byte - Byte_Offset;
-	};
+	constexpr std::size_t byte_mask_len(std::size_t byte_offset) {
+		return ptl::bits_per_byte - byte_offset;
+	}
 
 	/// Returns whether or not Bits + Offset spans multiple bytes
 	/**
-	 *  @tparam Bits The number of bits
-	 *  @tparam Offset The offset
+	 *  @param bits The number of bits
+	 *  @param offset The offset
 	 */
-	template <std::size_t Bits, std::size_t Offset>
-	struct spans_bytes
-	{
-		static const bool value = Bits + (Offset % ptl::bits_per_byte) > ptl::bits_per_byte;
-	};
+	constexpr bool spans_bytes(std::size_t bits, std::size_t offset) {
+		return bits + (offset % ptl::bits_per_byte) > ptl::bits_per_byte;
+	}
 
 	/// Provides the offset into a byte
 	/**
-	 *  @tparam Bit_Offset The number of bits
+	 *  @param bit_offset The number of bits
 	 */
-	template <std::size_t Bit_Offset>
-	struct byte_offset
-	{
-		static const std::size_t value = Bit_Offset % ptl::bits_per_byte;
-	};
+	constexpr std::size_t byte_offset(std::size_t bit_offset) {
+		return bit_offset % ptl::bits_per_byte;
+	}
 
 	/// Represents a field in a binary protocol
 	/**
@@ -105,10 +79,10 @@ namespace ptl
 			      "The number of bits in a field's type must be greater than or equal to the number of bits in the field");
 
 		typedef T value_type;
-		static const std::size_t bits = Bits;
+		static constexpr std::size_t bits = Bits;
 
 		/// Number of bytes required to store the field's value
-		static const std::size_t bytes = ptl::required_bytes<bits>::value;
+		static constexpr std::size_t bytes = ptl::required_bytes(bits);
 	};
 
 	/// Returns the number of bits in a field
@@ -119,7 +93,7 @@ namespace ptl
 	template<std::size_t I, class Tuple>
 	struct field_bits
 	{
-		static const std::size_t value = std::tuple_element<I, Tuple>::type::bits;
+		static constexpr std::size_t value = std::tuple_element<I, Tuple>::type::bits;
 	};
 
 	/// Provides a typedef for a fields type
@@ -147,7 +121,7 @@ namespace ptl
 	template<std::size_t I, class Tuple>
 	struct field_bit_offset
 	{
-		static const std::size_t value = ptl::field_bits<I - 1, Tuple>::value +
+		static constexpr std::size_t value = ptl::field_bits<I - 1, Tuple>::value +
 			ptl::field_bit_offset<I - 1, Tuple>::value;
 	};
 
@@ -155,7 +129,7 @@ namespace ptl
 	template <class Tuple>
 	struct field_bit_offset<0, Tuple>
 	{
-		static const std::size_t value = 0;
+		static constexpr std::size_t value = 0;
 	};
 
 	/// Returns the byte index of a field element in a tuple
@@ -168,7 +142,7 @@ namespace ptl
 	template<std::size_t I, class Tuple>
 	struct field_first_byte
 	{
-		static const std::size_t value = ptl::field_bit_offset<I, Tuple>::value / ptl::bits_per_byte;
+		static constexpr std::size_t value = ptl::field_bit_offset<I, Tuple>::value / ptl::bits_per_byte;
 	};
 
 	/// Returns the last byte index of a field
@@ -179,7 +153,7 @@ namespace ptl
 	template <std::size_t I, class Tuple>
 	struct field_last_byte
 	{
-		static const std::size_t value = (ptl::field_bit_offset<I, Tuple>::value +
+		static constexpr std::size_t value = (ptl::field_bit_offset<I, Tuple>::value +
 					     ptl::field_bits<I, Tuple>::value - 1) / ptl::bits_per_byte;
 	};
 
@@ -191,7 +165,7 @@ namespace ptl
 	template <std::size_t I, class Tuple>
 	struct field_spans_bytes
 	{
-		static const bool value = ((ptl::field_bit_offset<I, Tuple>::value % ptl::bits_per_byte) +
+		static constexpr bool value = ((ptl::field_bit_offset<I, Tuple>::value % ptl::bits_per_byte) +
 					   ptl::field_bits<I, Tuple>::value) > ptl::bits_per_byte;
 	};
 
@@ -204,7 +178,7 @@ namespace ptl
 	template<class Tuple>
 	struct protocol_length
 	{
-		static const std::size_t value = ptl::field_bit_offset<std::tuple_size<Tuple>::value - 1, Tuple>::value +
+		static constexpr std::size_t value = ptl::field_bit_offset<std::tuple_size<Tuple>::value - 1, Tuple>::value +
 			ptl::field_bits<std::tuple_size<Tuple>::value - 1, Tuple>::value;
 	};
 
@@ -213,11 +187,8 @@ namespace ptl
 	struct terminal_field_value
 	{
 		private:
-		typedef ptl::msb_mask<Field_Bits,
-						  Byte_Offset,
-						  unsigned char> byte_mask;
-
-		static const std::size_t value_shift = ptl::bits_per_byte - Field_Bits - Byte_Offset;
+		static constexpr unsigned char byte_mask = ptl::msb_mask<unsigned char>(Field_Bits, Byte_Offset);
+		static constexpr std::size_t value_shift = ptl::bits_per_byte - Field_Bits - Byte_Offset;
 
 		public:
 		static const T get(unsigned char const * const buf) {
@@ -225,20 +196,18 @@ namespace ptl
 			// mask and right shift the resulting value the
 			// appropriate bits to fit in the value in the remaining
 			// bits of the field
-			return (buf[0] & byte_mask::value) >> value_shift;
+			return (buf[0] & byte_mask) >> value_shift;
 		}
 
 		static const void set(unsigned char * const buf, const T value) {
 
-			typedef ptl::msb_mask<Field_Bits,
-				std::numeric_limits<T>::digits - Field_Bits,
-				T> value_mask;
-
+			static constexpr T value_mask = ptl::msb_mask<T>(Field_Bits,
+									 std::numeric_limits<T>::digits - Field_Bits);
 			// Clear the current value
-			buf[0] &= static_cast<unsigned char>(~byte_mask::value);
+			buf[0] &= static_cast<unsigned char>(~byte_mask);
 
 			// Set the new value
-			buf[0] |= ((value & value_mask::value) << value_shift);
+			buf[0] |= ((value & value_mask) << value_shift);
 		}
 	};
 
@@ -252,13 +221,11 @@ namespace ptl
 	struct recursive_field_value
 	{
 		private:
-		typedef ptl::msb_mask<ptl::byte_mask_len<Byte_Offset>::value,
-						  Byte_Offset,
-						  unsigned char> byte_mask;
-
-		static const std::size_t value_shift = Field_Bits - (ptl::bits_per_byte - Byte_Offset);
-		static const std::size_t next_bit_count = Field_Bits - ptl::byte_mask_len<Byte_Offset>::value;
-		static const bool next_spans_bytes = ptl::spans_bytes<next_bit_count, 0>::value;
+		static constexpr unsigned char byte_mask = ptl::msb_mask<unsigned char>(ptl::byte_mask_len(Byte_Offset),
+											Byte_Offset);
+		static constexpr std::size_t value_shift = Field_Bits - (ptl::bits_per_byte - Byte_Offset);
+		static constexpr std::size_t next_bit_count = Field_Bits - ptl::byte_mask_len(Byte_Offset);
+		static constexpr bool next_spans_bytes = ptl::spans_bytes(next_bit_count, 0);
 
 		public:
 		static const T get(unsigned char const * const buf) {
@@ -268,7 +235,7 @@ namespace ptl
 			// the next byte's value.  The formula below is:
 
 			// buf[0] & (mask to select field value in this byte) << (number of remaining field bits)
-			return (static_cast<T>((buf[0] & byte_mask::value)) << value_shift) +
+			return (static_cast<T>((buf[0] & byte_mask)) << value_shift) +
 				std::conditional<next_spans_bytes,
 						 ptl::recursive_field_value<next_bit_count, 0, T>,
 						 ptl::terminal_field_value<next_bit_count, 0, T>
@@ -277,15 +244,14 @@ namespace ptl
 
 		static void set(unsigned char * const buf, const T val) {
 
-			typedef ptl::msb_mask<ptl::byte_mask_len<Byte_Offset>::value,
-							  (std::numeric_limits<T>::digits - Field_Bits),
-							  T> value_mask;
+			static constexpr T value_mask = ptl::msb_mask<T>(ptl::byte_mask_len(Byte_Offset),
+									 (std::numeric_limits<T>::digits - Field_Bits));
 
 			// Clear the current value
-			buf[0] &= static_cast<unsigned char>(~byte_mask::value);
+			buf[0] &= static_cast<unsigned char>(~byte_mask);
 
 			// Set current byte
-			buf[0] |= ((val & value_mask::value) >> value_shift);
+			buf[0] |= ((val & value_mask) >> value_shift);
 
 			std::conditional<next_spans_bytes,
 					 ptl::recursive_field_value<next_bit_count, 0, T>,
@@ -297,7 +263,7 @@ namespace ptl
 	template <std::size_t Bits, std::size_t Offset, class T>
 	struct field_value
 	{
-		typedef typename std::conditional<ptl::spans_bytes<Bits, Offset>::value,
+		typedef typename std::conditional<ptl::spans_bytes(Bits, Offset),
 						  ptl::recursive_field_value<Bits, Offset, T>,
 						  ptl::terminal_field_value<Bits, Offset, T>
 						  >::type type;
@@ -310,28 +276,28 @@ namespace ptl
 		/// The type of the field
 		typedef typename std::tuple_element<Field, Tuple>::type type;
 		/// The field index in the protocol
-		static const std::size_t index = Field;
+		static constexpr std::size_t index = Field;
 		/// The number of bits before the field's bits in a buffer
-		static const std::size_t bit_offset = ptl::field_bit_offset<Field, Tuple>::value;
+		static constexpr std::size_t bit_offset = ptl::field_bit_offset<Field, Tuple>::value;
 		/// The bit offset into the fields first byte
-		static const std::size_t byte_bit_offset = bit_offset % ptl::bits_per_byte;
+		static constexpr std::size_t byte_bit_offset = bit_offset % ptl::bits_per_byte;
 		/// The index of the field's first byte in a buffer
-		static const std::size_t byte_index = ptl::field_first_byte<Field, Tuple>::value;
+		static constexpr std::size_t byte_index = ptl::field_first_byte<Field, Tuple>::value;
 		/// True if the field spans multiple bytes in a buffer
-		static const bool spans_bytes = ptl::spans_bytes<type::bits, bit_offset>::value;
+		static constexpr bool spans_bytes = ptl::spans_bytes(type::bits, bit_offset);
 	};
 
 	template <class Tuple>
 	struct protocol_traits
 	{
 		/// number of bits in the protocol
-		static const std::size_t bits = ptl::protocol_length<Tuple>::value;
+		static constexpr std::size_t bits = ptl::protocol_length<Tuple>::value;
 
 		/// number of bytes required to store the protocols buffer
-		static const std::size_t bytes = ptl::required_bytes<bits>::value;
+		static constexpr std::size_t bytes = ptl::required_bytes(bits);
 
 		/// Number of fields the protocol has
-		static const std::size_t fields = std::tuple_size<Tuple>::value;
+		static constexpr std::size_t fields = std::tuple_size<Tuple>::value;
 
 		/// std::array representation of the protocol's buffer
 		typedef std::array<unsigned char, bytes> array_type;
@@ -387,9 +353,9 @@ namespace ptl
 	const typename ptl::field_type<I, Tuple>::type protocol<Tuple>::field_value(unsigned char const * const buf)
 	{
 		return ptl::field_value<ptl::field_bits<I, Tuple>::value,
-						    ptl::byte_offset<ptl::field_bit_offset<I, Tuple>::value>::value,
-						    typename ptl::field_type<I, Tuple>::type
-						    >::type::get(buf + ptl::field_first_byte<I, Tuple>::value);
+					ptl::byte_offset(ptl::field_bit_offset<I, Tuple>::value),
+					typename ptl::field_type<I, Tuple>::type
+					>::type::get(buf + ptl::field_first_byte<I, Tuple>::value);
 	}
 
 	template<class Tuple>
@@ -397,8 +363,8 @@ namespace ptl
 	void protocol<Tuple>::field_value(unsigned char * const buf, const typename ptl::field_type<I, Tuple>::type val)
 	{
 		ptl::field_value<ptl::field_bits<I, Tuple>::value,
-					     ptl::byte_offset<ptl::field_bit_offset<I, Tuple>::value>::value,
-					     typename ptl::field_type<I, Tuple>::type
-					     >::type::set(buf + ptl::field_first_byte<I, Tuple>::value, val);
+				 ptl::byte_offset(ptl::field_bit_offset<I, Tuple>::value),
+				 typename ptl::field_type<I, Tuple>::type
+				 >::type::set(buf + ptl::field_first_byte<I, Tuple>::value, val);
 	}
 }
