@@ -14,13 +14,16 @@ typedef tuple<field<8, unsigned char>,  // sync byte
 
 typedef protocol<mpeg2_ts_tpl> ts_proto;
 
-enum class mpeg2_ts {
-	sync_byte = 0,
-		tei,
-		pusi,
-		transport_priority,
-		pid,
-		};
+struct mpeg2_ts
+{
+	enum : unsigned int {
+		sync_byte = 0,
+			tei,
+			pusi,
+			transport_priority,
+			pid,
+			};
+};
 
 int main()
 {

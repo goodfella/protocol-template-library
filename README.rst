@@ -92,19 +92,21 @@ version is given below::
         auto version = rtp::field_value<0>(rtp_buf.data());
 
 It's also possible to provide convienent labels for a protocol's
-fields via an enum class::
+fields via an enum wrapped by a struct::
 
-	enum class rtp_fields : size_t {
-		version,
-		padding_bit,
-		extension_bit,
-		csrc_count,
-		marker_bit,
-		payload_type,
-		sequence_number,
-		timestamp,
-		ssrc
-	};
+  struct rtp_fields {
+      enum : size_t {
+           version,
+           padding_bit,
+           extension_bit,
+           csrc_count,
+           marker_bit,
+           payload_type,
+           sequence_number,
+           timestamp,
+           ssrc
+      };
+  };
 
 This allows for the following::
 
