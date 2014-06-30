@@ -344,7 +344,7 @@ namespace ptl
 		 */
 		template <std::size_t I>
 		struct field: public ptl::field<ptl::field_bits<I, Tuple>::value,
-							    typename ptl::field_type<I, Tuple>::type> {};
+						typename ptl::field_type<I, Tuple>::type> {};
 	};
 
 	template<class Tuple>
