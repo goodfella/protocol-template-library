@@ -67,7 +67,7 @@ namespace ptl
 	 *  @tparam Bits Number of bits that make up the field
 	 *  @tparam T Type used to represent the field
 	 */
-	template<std::size_t Bits, typename T>
+	template<int Bits, typename T>
 	struct field
 	{
 		static_assert(Bits > 0,
