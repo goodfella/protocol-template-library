@@ -93,7 +93,7 @@ namespace ptl
 	template<std::size_t I, class Tuple>
 	struct field_bits
 	{
-		static constexpr std::size_t value = std::tuple_element<I, Tuple>::type::bits;
+		static constexpr auto value = std::tuple_element<I, Tuple>::type::bits;
 	};
 
 	/// Provides a type alias for a field's type
@@ -187,8 +187,8 @@ namespace ptl
 	struct terminal_field_value
 	{
 		private:
-		static constexpr unsigned char byte_mask = ptl::msb_mask<unsigned char>(Field_Bits, Byte_Offset);
-		static constexpr std::size_t value_shift = ptl::bits_per_byte - Field_Bits - Byte_Offset;
+		static constexpr auto byte_mask = ptl::msb_mask<unsigned char>(Field_Bits, Byte_Offset);
+		static constexpr auto value_shift = ptl::bits_per_byte - Field_Bits - Byte_Offset;
 
 		public:
 		static const T get(unsigned char const * const buf) {
@@ -201,8 +201,8 @@ namespace ptl
 
 		static const void set(unsigned char * const buf, const T value) {
 
-			static constexpr T value_mask = ptl::msb_mask<T>(Field_Bits,
-									 std::numeric_limits<T>::digits - Field_Bits);
+			static constexpr auto value_mask = ptl::msb_mask<T>(Field_Bits,
+									    std::numeric_limits<T>::digits - Field_Bits);
 			// Clear the current value
 			buf[0] &= static_cast<unsigned char>(~byte_mask);
 
@@ -221,11 +221,11 @@ namespace ptl
 	struct recursive_field_value
 	{
 		private:
-		static constexpr unsigned char byte_mask = ptl::msb_mask<unsigned char>(ptl::byte_mask_len(Byte_Offset),
-											Byte_Offset);
-		static constexpr std::size_t value_shift = Field_Bits - (ptl::bits_per_byte - Byte_Offset);
-		static constexpr std::size_t next_bit_count = Field_Bits - ptl::byte_mask_len(Byte_Offset);
-		static constexpr bool next_spans_bytes = ptl::spans_bytes(next_bit_count, 0);
+		static constexpr auto byte_mask = ptl::msb_mask<unsigned char>(ptl::byte_mask_len(Byte_Offset),
+									       Byte_Offset);
+		static constexpr auto value_shift = Field_Bits - (ptl::bits_per_byte - Byte_Offset);
+		static constexpr auto next_bit_count = Field_Bits - ptl::byte_mask_len(Byte_Offset);
+		static constexpr auto next_spans_bytes = ptl::spans_bytes(next_bit_count, 0);
 
 		public:
 		static const T get(unsigned char const * const buf) {
@@ -244,7 +244,7 @@ namespace ptl
 
 		static void set(unsigned char * const buf, const T val) {
 
-			static constexpr T value_mask = ptl::msb_mask<T>(ptl::byte_mask_len(Byte_Offset),
+			static constexpr auto value_mask = ptl::msb_mask<T>(ptl::byte_mask_len(Byte_Offset),
 									 (std::numeric_limits<T>::digits - Field_Bits));
 
 			// Clear the current value
@@ -276,28 +276,28 @@ namespace ptl
 		/// The type of the field
 		using type = typename std::tuple_element<Field, Tuple>::type;
 		/// The field index in the protocol
-		static constexpr std::size_t index = Field;
+		static constexpr auto index = Field;
 		/// The number of bits before the field's bits in a buffer
-		static constexpr std::size_t bit_offset = ptl::field_bit_offset<Field, Tuple>::value;
+		static constexpr auto bit_offset = ptl::field_bit_offset<Field, Tuple>::value;
 		/// The bit offset into the fields first byte
-		static constexpr std::size_t byte_bit_offset = bit_offset % ptl::bits_per_byte;
+		static constexpr auto byte_bit_offset = bit_offset % ptl::bits_per_byte;
 		/// The index of the field's first byte in a buffer
-		static constexpr std::size_t byte_index = ptl::field_first_byte<Field, Tuple>::value;
+		static constexpr auto byte_index = ptl::field_first_byte<Field, Tuple>::value;
 		/// True if the field spans multiple bytes in a buffer
-		static constexpr bool spans_bytes = ptl::spans_bytes(type::bits, bit_offset);
+		static constexpr auto spans_bytes = ptl::spans_bytes(type::bits, bit_offset);
 	};
 
 	template <class Tuple>
 	struct protocol_traits
 	{
 		/// number of bits in the protocol
-		static constexpr std::size_t bits = ptl::protocol_length<Tuple>::value;
+		static constexpr auto bits = ptl::protocol_length<Tuple>::value;
 
 		/// number of bytes required to store the protocols buffer
-		static constexpr std::size_t bytes = ptl::required_bytes(bits);
+		static constexpr auto bytes = ptl::required_bytes(bits);
 
 		/// Number of fields the protocol has
-		static constexpr std::size_t fields = std::tuple_size<Tuple>::value;
+		static constexpr auto fields = std::tuple_size<Tuple>::value;
 
 		/// std::array representation of the protocol's buffer
 		using array_type = std::array<unsigned char, bytes>;
