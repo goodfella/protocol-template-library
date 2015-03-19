@@ -101,11 +101,8 @@ namespace ptl
 	 *  @tparam I Order number of the element within the tuple
 	 *  @tparam Tuple Tuplethat contains the field
 	 */
-	template<std::size_t I, class Tuple>
-	struct field_type
-	{
-		using type = typename std::tuple_element<I, Tuple>::type::value_type;
-	};
+	template <std::size_t I, class Tuple>
+	using field_type = typename std::tuple_element<I, Tuple>::type::value_type;
 
 	/// Returns the bit offset of a field element within a tuple
 	/**
@@ -313,7 +310,7 @@ namespace ptl
 		public:
 
 		using tuple_type = Tuple;
-		struct traits: public protocol_traits<Tuple> {};
+		using traits = protocol_traits<Tuple>;
 
 		/// Accessor for a protocol field given a protocol buffer
 		/**
@@ -321,7 +318,7 @@ namespace ptl
 		 *  @param buf Protocol buffer.
 		 */
 		template<std::size_t I>
-		static const typename ptl::field_type<I, Tuple>::type field_value(unsigned char const * const buf);
+		static const ptl::field_type<I, Tuple> field_value(unsigned char const * const buf);
 
 		/// Sets a protocol field's value
 		/**
@@ -330,41 +327,41 @@ namespace ptl
 		 *  @param val Value to set the field to
 		 */
 		template<std::size_t I>
-		static void field_value(unsigned char * const buf, const typename ptl::field_type<I, Tuple>::type value);
+		static void field_value(unsigned char * const buf, const ptl::field_type<I, Tuple> value);
 
 		/// Defines the field_protocol_traits for the field
 		/**
 		 *  @tparam I Order number of the field in the protocol tuple
 		 */
-		template<std::size_t I>
-		struct field_traits: public ptl::field_protocol_traits<I, Tuple> {};
+		template <std::size_t I>
+		using field_traits = ptl::field_protocol_traits<I, Tuple>;
 
 		/// Provides a field type
 		/**
 		 *  @tparam I Order number of the field in the protocol tuple
 		 */
 		template <std::size_t I>
-		struct field: public ptl::field<ptl::field_bits<I, Tuple>::value,
-						typename ptl::field_type<I, Tuple>::type> {};
+		using field = ptl::field<ptl::field_bits<I, Tuple>::value,
+					 ptl::field_type<I, Tuple>>;
 	};
 
 	template<class Tuple>
 	template<std::size_t I>
-	const typename ptl::field_type<I, Tuple>::type protocol<Tuple>::field_value(unsigned char const * const buf)
+	const ptl::field_type<I, Tuple> protocol<Tuple>::field_value(unsigned char const * const buf)
 	{
 		return ptl::field_value<ptl::field_bits<I, Tuple>::value,
 					ptl::byte_offset(ptl::field_bit_offset<I, Tuple>::value),
-					typename ptl::field_type<I, Tuple>::type
+					ptl::field_type<I, Tuple>
 					>::type::get(buf + ptl::field_first_byte<I, Tuple>::value);
 	}
 
 	template<class Tuple>
 	template<std::size_t I>
-	void protocol<Tuple>::field_value(unsigned char * const buf, const typename ptl::field_type<I, Tuple>::type val)
+	void protocol<Tuple>::field_value(unsigned char * const buf, const ptl::field_type<I, Tuple> val)
 	{
 		ptl::field_value<ptl::field_bits<I, Tuple>::value,
 				 ptl::byte_offset(ptl::field_bit_offset<I, Tuple>::value),
-				 typename ptl::field_type<I, Tuple>::type
+				 ptl::field_type<I, Tuple>
 				 >::type::set(buf + ptl::field_first_byte<I, Tuple>::value, val);
 	}
 }
