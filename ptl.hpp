@@ -78,7 +78,7 @@ namespace ptl
 		static_assert(static_cast<std::size_t>(std::numeric_limits<T>::digits) >= Bits,
 			      "The number of bits in a field's type must be greater than or equal to the number of bits in the field");
 
-		typedef T value_type;
+		using value_type = T;
 		static constexpr std::size_t bits = Bits;
 
 		/// Number of bytes required to store the field's value
@@ -96,7 +96,7 @@ namespace ptl
 		static constexpr std::size_t value = std::tuple_element<I, Tuple>::type::bits;
 	};
 
-	/// Provides a typedef for a fields type
+	/// Provides a type alias for a field's type
 	/**
 	 *  @tparam I Order number of the element within the tuple
 	 *  @tparam Tuple Tuplethat contains the field
@@ -104,7 +104,7 @@ namespace ptl
 	template<std::size_t I, class Tuple>
 	struct field_type
 	{
-		typedef typename std::tuple_element<I, Tuple>::type::value_type type;
+		using type = typename std::tuple_element<I, Tuple>::type::value_type;
 	};
 
 	/// Returns the bit offset of a field element within a tuple
@@ -263,10 +263,10 @@ namespace ptl
 	template <std::size_t Bits, std::size_t Offset, class T>
 	struct field_value
 	{
-		typedef typename std::conditional<ptl::spans_bytes(Bits, Offset),
-						  ptl::recursive_field_value<Bits, Offset, T>,
-						  ptl::terminal_field_value<Bits, Offset, T>
-						  >::type type;
+		using type = typename std::conditional<ptl::spans_bytes(Bits, Offset),
+						       ptl::recursive_field_value<Bits, Offset, T>,
+						       ptl::terminal_field_value<Bits, Offset, T>
+						       >::type;
 	};
 
 	/// Defines the field traits which are dependent on the protocol
@@ -274,7 +274,7 @@ namespace ptl
 	struct field_protocol_traits
 	{
 		/// The type of the field
-		typedef typename std::tuple_element<Field, Tuple>::type type;
+		using type = typename std::tuple_element<Field, Tuple>::type;
 		/// The field index in the protocol
 		static constexpr std::size_t index = Field;
 		/// The number of bits before the field's bits in a buffer
@@ -300,7 +300,7 @@ namespace ptl
 		static constexpr std::size_t fields = std::tuple_size<Tuple>::value;
 
 		/// std::array representation of the protocol's buffer
-		typedef std::array<unsigned char, bytes> array_type;
+		using array_type = std::array<unsigned char, bytes>;
 	};
 
 	/// Class that represents a protocol defined by a field tuple
@@ -312,7 +312,7 @@ namespace ptl
 	{
 		public:
 
-		typedef Tuple tuple_type;
+		using tuple_type = Tuple;
 		struct traits: public protocol_traits<Tuple> {};
 
 		/// Accessor for a protocol field given a protocol buffer

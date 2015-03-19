@@ -5,14 +5,14 @@ using namespace std;
 using namespace ptl;
 
 // Partial MPEG 2 transport stream header
-typedef tuple<field<8, unsigned char>,  // sync byte
-	      field<1, bool>,           // transport error indicator
-	      field<1, bool>,           // payload unit start indicator
-	      field<1, bool>,           // transport priority
-	      field<13, unsigned short> // PID
-	      > mpeg2_ts_tpl;
+using mpeg2_ts_tpl = tuple<field<8, unsigned char>,  // sync byte
+			   field<1, bool>,           // transport error indicator
+			   field<1, bool>,           // payload unit start indicator
+			   field<1, bool>,           // transport priority
+			   field<13, unsigned short> // PID
+			   >;
 
-typedef protocol<mpeg2_ts_tpl> ts_proto;
+using ts_proto = protocol<mpeg2_ts_tpl>;
 
 struct mpeg2_ts
 {
