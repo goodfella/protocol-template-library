@@ -260,13 +260,10 @@ namespace ptl
 	};
 
 	template <std::size_t Bits, std::size_t Offset, class T>
-	struct field_value
-	{
-		using type = typename std::conditional<ptl::spans_bytes(Bits, Offset),
-						       ptl::recursive_field_value<Bits, Offset, T>,
-						       ptl::terminal_field_value<Bits, Offset, T>
-						       >::type;
-	};
+	using field_value = typename std::conditional<ptl::spans_bytes(Bits, Offset),
+						      ptl::recursive_field_value<Bits, Offset, T>,
+						      ptl::terminal_field_value<Bits, Offset, T>
+						      >::type;
 
 	/// Defines the field traits which are dependent on the protocol
 	template <std::size_t Field, class Tuple>
@@ -354,7 +351,7 @@ namespace ptl
 		return ptl::field_value<ptl::field_bits<I, Tuple>::value,
 					ptl::byte_offset(ptl::field_bit_offset<I, Tuple>::value),
 					ptl::field_type<I, Tuple>
-					>::type::get(buf + ptl::field_first_byte<I, Tuple>::value);
+					>::get(buf + ptl::field_first_byte<I, Tuple>::value);
 	}
 
 	template<class Tuple>
@@ -364,6 +361,6 @@ namespace ptl
 		ptl::field_value<ptl::field_bits<I, Tuple>::value,
 				 ptl::byte_offset(ptl::field_bit_offset<I, Tuple>::value),
 				 ptl::field_type<I, Tuple>
-				 >::type::set(buf + ptl::field_first_byte<I, Tuple>::value, val);
+				 >::set(buf + ptl::field_first_byte<I, Tuple>::value, val);
 	}
 }

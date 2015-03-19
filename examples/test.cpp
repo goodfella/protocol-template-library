@@ -387,7 +387,7 @@ void test_protocol(unsigned char * const buf)
 
 template <size_t Bit, size_t Field_Offset, size_t Field_Size, class Type>
 void test_bit(unsigned char * const buf) {
-	using fv_type = typename ptl::field_value<Field_Size, Field_Offset, Type>::type;
+	using fv_type = ptl::field_value<Field_Size, Field_Offset, Type>;
 	Type val = ptl::msb_mask<Type>(1, numeric_limits<Type>::digits - Field_Size + Bit);
 
 	fv_type::set(buf, val);
