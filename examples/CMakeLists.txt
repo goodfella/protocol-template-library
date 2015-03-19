@@ -2,7 +2,7 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 PROJECT(protocol-helper-examples CXX)
 
 INCLUDE_DIRECTORIES(..)
-ADD_DEFINITIONS(-Wall -Werror -pedantic -std=c++0x)
+ADD_DEFINITIONS(-Wall -Werror -Wnoexcept -pedantic -std=c++0x)
 
 ADD_EXECUTABLE(mpeg2-ts
   mpeg2_ts.cpp)

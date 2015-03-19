@@ -9,7 +9,9 @@ namespace ptl
 	static constexpr std::size_t bits_per_byte = static_cast<std::size_t>(std::numeric_limits<unsigned char>::digits);
 
 	// Returns the number of bytes required to store the provided bits
-	constexpr std::size_t required_bytes(std::size_t bits) { return (bits / ptl::bits_per_byte) + ((bits % ptl::bits_per_byte) != 0); }
+	constexpr std::size_t required_bytes(std::size_t bits) noexcept {
+		return (bits / ptl::bits_per_byte) + ((bits % ptl::bits_per_byte) != 0);
+	}
 
 	/// Returns the mask necessary to select bits starting from the most significant bit
 	/**
@@ -20,7 +22,7 @@ namespace ptl
 	 *  @tparam T the type of value
 	 */
 	template <class T>
-	constexpr T msb_mask(std::size_t bits, std::size_t start) {
+	constexpr T msb_mask(std::size_t bits, std::size_t start) noexcept {
 		return bits > 0 ? (static_cast<T>(1) << (std::numeric_limits<T>::digits - (bits + start))) +
 			ptl::msb_mask<T>(bits - 1, start) : 0;
 	}
@@ -34,7 +36,7 @@ namespace ptl
 	 *  @tparam T The type of value
 	 */
 	template <class T>
-	constexpr T lsb_mask(std::size_t bits, std::size_t start) {
+	constexpr T lsb_mask(std::size_t bits, std::size_t start) noexcept {
 		return bits > 0 ? (static_cast<T>(1) << (bits - 1 + start)) + ptl::lsb_mask<T>(bits - 1, start) : 0;
 	}
 
@@ -42,7 +44,7 @@ namespace ptl
 	/**
 	 *  @param byte_offset The field's offset into the byte
 	 */
-	constexpr std::size_t byte_mask_len(std::size_t byte_offset) {
+	constexpr std::size_t byte_mask_len(std::size_t byte_offset) noexcept {
 		return ptl::bits_per_byte - byte_offset;
 	}
 
@@ -51,7 +53,7 @@ namespace ptl
 	 *  @param bits The number of bits
 	 *  @param offset The offset
 	 */
-	constexpr bool spans_bytes(std::size_t bits, std::size_t offset) {
+	constexpr bool spans_bytes(std::size_t bits, std::size_t offset) noexcept {
 		return bits + (offset % ptl::bits_per_byte) > ptl::bits_per_byte;
 	}
 
@@ -59,7 +61,7 @@ namespace ptl
 	/**
 	 *  @param bit_offset The number of bits
 	 */
-	constexpr std::size_t byte_offset(std::size_t bit_offset) {
+	constexpr std::size_t byte_offset(std::size_t bit_offset) noexcept {
 		return bit_offset % ptl::bits_per_byte;
 	}
 
@@ -188,7 +190,7 @@ namespace ptl
 		static constexpr auto value_shift = ptl::bits_per_byte - Field_Bits - Byte_Offset;
 
 		public:
-		static const T get(unsigned char const * const buf) {
+		static const T get(unsigned char const * const buf) noexcept {
 			// Select the bits from buf with the byte order's byte
 			// mask and right shift the resulting value the
 			// appropriate bits to fit in the value in the remaining
@@ -196,7 +198,7 @@ namespace ptl
 			return (buf[0] & byte_mask) >> value_shift;
 		}
 
-		static const void set(unsigned char * const buf, const T value) {
+		static const void set(unsigned char * const buf, const T value) noexcept {
 
 			static constexpr auto value_mask = ptl::msb_mask<T>(Field_Bits,
 									    std::numeric_limits<T>::digits - Field_Bits);
@@ -225,7 +227,7 @@ namespace ptl
 		static constexpr auto next_spans_bytes = ptl::spans_bytes(next_bit_count, 0);
 
 		public:
-		static const T get(unsigned char const * const buf) {
+		static const T get(unsigned char const * const buf) noexcept {
 
 			// Selects the bits from buf with the mask, and left
 			// shifts the resulting value the appropriate bits to fit
@@ -239,7 +241,7 @@ namespace ptl
 						 >::type::get(buf + 1);
 		}
 
-		static void set(unsigned char * const buf, const T val) {
+		static void set(unsigned char * const buf, const T val) noexcept {
 
 			static constexpr auto value_mask = ptl::msb_mask<T>(ptl::byte_mask_len(Byte_Offset),
 									 (std::numeric_limits<T>::digits - Field_Bits));
@@ -318,7 +320,7 @@ namespace ptl
 		 *  @param buf Protocol buffer.
 		 */
 		template<std::size_t I>
-		static const ptl::field_type<I, Tuple> field_value(unsigned char const * const buf);
+		static const ptl::field_type<I, Tuple> field_value(unsigned char const * const buf) noexcept;
 
 		/// Sets a protocol field's value
 		/**
@@ -327,7 +329,7 @@ namespace ptl
 		 *  @param val Value to set the field to
 		 */
 		template<std::size_t I>
-		static void field_value(unsigned char * const buf, const ptl::field_type<I, Tuple> value);
+		static void field_value(unsigned char * const buf, const ptl::field_type<I, Tuple> value) noexcept;
 
 		/// Defines the field_protocol_traits for the field
 		/**
@@ -347,7 +349,7 @@ namespace ptl
 
 	template<class Tuple>
 	template<std::size_t I>
-	const ptl::field_type<I, Tuple> protocol<Tuple>::field_value(unsigned char const * const buf)
+	const ptl::field_type<I, Tuple> protocol<Tuple>::field_value(unsigned char const * const buf) noexcept
 	{
 		return ptl::field_value<ptl::field_bits<I, Tuple>::value,
 					ptl::byte_offset(ptl::field_bit_offset<I, Tuple>::value),
@@ -357,7 +359,7 @@ namespace ptl
 
 	template<class Tuple>
 	template<std::size_t I>
-	void protocol<Tuple>::field_value(unsigned char * const buf, const ptl::field_type<I, Tuple> val)
+	void protocol<Tuple>::field_value(unsigned char * const buf, const ptl::field_type<I, Tuple> val) noexcept
 	{
 		ptl::field_value<ptl::field_bits<I, Tuple>::value,
 				 ptl::byte_offset(ptl::field_bit_offset<I, Tuple>::value),
