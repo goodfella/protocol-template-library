@@ -1,11 +1,11 @@
-CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
-PROJECT(protocol-helper-examples CXX)
+cmake_minimum_required(VERSION 2.8)
+project(protocol-helper-examples CXX)
 
-INCLUDE_DIRECTORIES(..)
-ADD_DEFINITIONS(-Wall -Werror -Wnoexcept -pedantic -std=c++0x)
+include_directories(..)
+add_definitions(-Wall -Werror -Wnoexcept -pedantic -std=c++14)
 
-ADD_EXECUTABLE(mpeg2-ts
+add_executable(mpeg2-ts
   mpeg2_ts.cpp)
 
-ADD_EXECUTABLE(test
+add_executable(test-ptl
   test.cpp)

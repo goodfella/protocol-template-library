@@ -1,3 +1,3 @@
-CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
-PROJECT(protocol-template-library CXX)
-ADD_SUBDIRECTORY(examples)
+cmake_minimum_required(VERSION 2.8)
+project(protocol-template-library CXX)
+add_subdirectory(examples)
