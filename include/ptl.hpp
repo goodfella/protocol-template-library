@@ -39,10 +39,11 @@ namespace ptl
     }
 
     /** Returns the number of bits to read from a byte
-	 *  @param byte_offset The field's offset into the byte
+     *
+	 *  @param offset The number of bits to into field to start
 	 */
-    constexpr std::size_t byte_mask_len(std::size_t byte_offset) noexcept {
-        return ptl::bits_per_byte - byte_offset;
+    constexpr std::size_t byte_mask_len(std::size_t offset) noexcept {
+        return ptl::bits_per_byte - offset;
     }
 
     /** Returns whether or not Bits + Offset spans multiple bytes
@@ -53,10 +54,11 @@ namespace ptl
         return bits + (offset % ptl::bits_per_byte) > ptl::bits_per_byte;
     }
 
-    /** Provides the offset into a byte
+    /** Provides the offset into a byte given the field's starting bit offset
+     *
 	 *  @param bit_offset The number of bits
 	 */
-    constexpr std::size_t byte_offset(std::size_t bit_offset) noexcept {
+    constexpr std::size_t field_byte_offset(std::size_t bit_offset) noexcept {
         return bit_offset % ptl::bits_per_byte;
     }
 
@@ -307,7 +309,7 @@ namespace ptl
              *  @param buf Protocol buffer.
              */
             template<std::size_t I>
-            static const ptl::field_type<I, Tuple> field_value(unsigned char const * const buf) noexcept;
+            static ptl::field_type<I, Tuple> field_value(unsigned char const * const buf) noexcept;
 
             /// Sets a protocol field's value
             /**
@@ -336,12 +338,12 @@ namespace ptl
 
     template<class Tuple>
     template<std::size_t I>
-    const ptl::field_type<I, Tuple> protocol<Tuple>::field_value(unsigned char const * const buf) noexcept
+    ptl::field_type<I, Tuple> protocol<Tuple>::field_value(unsigned char const * const buf) noexcept
     {
         static_assert(I < std::tuple_size<Tuple>::value,
                       "Protocol tuple index is greater than tuple size");
         return ptl::field_value<ptl::field_bits<I, Tuple>::value,
-                                ptl::byte_offset(ptl::field_bit_offset<I, Tuple>::value),
+                                ptl::field_byte_offset(ptl::field_bit_offset<I, Tuple>::value),
                                 ptl::field_type<I, Tuple>
                                 >::get(buf + ptl::field_first_byte<I, Tuple>::value);
     }
@@ -353,7 +355,7 @@ namespace ptl
         static_assert(I < std::tuple_size<Tuple>::value,
                       "Protocol tuple index is greater than tuple size");
         ptl::field_value<ptl::field_bits<I, Tuple>::value,
-                         ptl::byte_offset(ptl::field_bit_offset<I, Tuple>::value),
+                         ptl::field_byte_offset(ptl::field_bit_offset<I, Tuple>::value),
                          ptl::field_type<I, Tuple>
                          >::set(buf + ptl::field_first_byte<I, Tuple>::value, val);
     }
